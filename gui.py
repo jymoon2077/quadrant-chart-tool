@@ -42,6 +42,11 @@ class MainWindow(QMainWindow):
         self.y_combo_box.setPlaceholderText('Select Y axis')
         self.button_layout.addWidget(self.y_combo_box)
 
+        # X와 Y 축 서로 변경 버튼 추가
+        self.switch_axes_button = QPushButton('Switch Axes')
+        self.switch_axes_button.clicked.connect(self.switch_axes)
+        self.button_layout.addWidget(self.switch_axes_button)
+
         self.plot_button = QPushButton('Plot Chart')
         self.plot_button.clicked.connect(self.plot_chart)
         self.button_layout.addWidget(self.plot_button)
@@ -98,6 +103,15 @@ class MainWindow(QMainWindow):
         self.x_column = self.x_combo_box.currentText()
         self.y_column = self.y_combo_box.currentText()
 
+        if self.x_column == "" or self.y_column == "":
+            QMessageBox.critical(self, 'Error', 'X and Y axes must be selected.')
+            return
+
+        if self.x_column == self.y_column:
+            QMessageBox.critical(self, 'Error', 'X and Y axes must be different.')
+            self.y_combo_box.setCurrentIndex(-1)
+            return
+
         header = self.table_widget.horizontalHeader()
         model = header.model()
         column_count = header.count()
@@ -132,10 +146,33 @@ class MainWindow(QMainWindow):
     def populate_combo_boxes(self):
         data = self.data_handler.get_data()
         columns = data.columns
+
+        exclude_texts = ['Key', 'Summary']  # 여러 개의 텍스트를 리스트로 정의
+
+        filtered_columns = [col for col in columns if not any(text in col for text in exclude_texts)]
+
         self.x_combo_box.clear()
         self.y_combo_box.clear()
-        self.x_combo_box.addItems(columns)
-        self.y_combo_box.addItems(columns)
+        self.x_combo_box.addItems(filtered_columns)
+        self.y_combo_box.addItems(filtered_columns)
+
+    def switch_axes(self):
+        current_x = self.x_combo_box.currentText()
+        current_y = self.y_combo_box.currentText()
+
+        # Swap current X and Y selections
+        self.x_combo_box.setCurrentText(current_y)
+        self.y_combo_box.setCurrentText(current_x)
+
+        # X와 Y 축이 동일한지 검사하는 슬롯 추가
+    def check_axes_selection(self):
+        selected_x = self.x_combo_box.currentText()
+        selected_y = self.y_combo_box.currentText()
+
+        if selected_x == selected_y:
+            QMessageBox.critical(self, 'Error', 'X and Y axes must be different.')
+            # X와 Y 축이 동일한 경우, X 축 콤보 박스를 초기 상태로 되돌림
+            self.y_combo_box.setCurrentIndex(-1)
 
     def display_data(self):
         data = self.data_handler.get_data()
