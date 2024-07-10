@@ -24,6 +24,7 @@ class DataHandler:
         name = sheet_names[0]
         sheet_ranges = wb[name]
         self.data = pd.DataFrame(sheet_ranges.values)
+        self.data.fillna(0, inplace=True)
 
         new_header = self.data.iloc[0]  # 첫 번째 row를 헤더로 사용
         self.data = self.data[1:]  # 첫 번째 row를 데이터로 사용하므로 제거
@@ -44,6 +45,22 @@ class DataHandler:
         print(self.data)
         print('calculate_data finished!')
 
+    def load_data3(self, file_path):
+        # ExcelFile 객체 생성
+        xls = pd.ExcelFile(file_path, engine='openpyxl')
+
+        # 첫 번째 시트명 가져오기
+        sheet_name = xls.sheet_names[0]
+
+        # 수식 포함하여 데이터프레임으로 읽어오기
+        self.data = pd.read_excel(xls, sheet_name=sheet_name, engine='openpyxl', dtype=str, na_values='',
+                                  keep_default_na=False)
+
+        # 빈 값(NA)을 0으로 대체
+        self.data.fillna(0, inplace=True)
+
+        # 출력
+        print(self.data)
 
 
     def create_column_info(self):

@@ -68,11 +68,9 @@ class ChartCanvas(FigureCanvas):
 
         self.draw()
 
-
     def random_color(self):
         r = lambda: random.randint(0, 255)
         return f'#{r():02x}{r():02x}{r():02x}'
-
 
     def on_click(self, event):
         if event.inaxes != self.axes:
@@ -94,23 +92,27 @@ class ChartCanvas(FigureCanvas):
 
         self.point_selected.emit(self.selected_point)
 
-        self.background = self.figure.canvas.copy_from_bbox(self.axes.bbox)  # <-- 수정된 부분: self.figure 사용
+        self.background = self.figure.canvas.copy_from_bbox(self.axes.bbox)
         self.axes.draw_artist(self.scatter)
-        self.figure.canvas.blit(self.axes.bbox)  # <-- 수정된 부분: self.figure 사용
+        self.figure.canvas.blit(self.axes.bbox)
 
     def on_motion(self, event):
         if self.selected_point is not None:
             print("on_motion")
             # Update the data frame with new coordinates
             key = self.selected_point['Key']
-            self.data.loc[self.data['Key'] == key, self.x_label] = event.xdata
-            self.data.loc[self.data['Key'] == key, self.y_label] = event.ydata
+            new_x = min(max(event.xdata, self.axes.get_xlim()[0]), self.axes.get_xlim()[1])
+            new_y = min(max(event.ydata, self.axes.get_ylim()[0]), self.axes.get_ylim()[1])
+            self.data.loc[self.data['Key'] == key, self.x_label] = new_x
+            self.data.loc[self.data['Key'] == key, self.y_label] = new_y
             self.update_plot()
 
     def on_release(self, event):
         if self.selected_point is not None:
             print("on_release!")
-            self.point_dropped.emit(self.selected_point['Key'], event.xdata, event.ydata)
+            new_x = min(max(event.xdata, self.axes.get_xlim()[0]), self.axes.get_xlim()[1])
+            new_y = min(max(event.ydata, self.axes.get_ylim()[0]), self.axes.get_ylim()[1])
+            self.point_dropped.emit(self.selected_point['Key'], new_x, new_y)
             self.selected_point = None
 
     def update_table(self, key, new_x, new_y):
