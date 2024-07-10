@@ -4,6 +4,7 @@ from PyQt5.QtCore import Qt, pyqtSlot
 from chart import ChartCanvas
 from data_handler import DataHandler
 import sys
+import re
 
 
 class MainWindow(QMainWindow):
@@ -19,6 +20,7 @@ class MainWindow(QMainWindow):
         self.y_column_index = -1
 
         self.data_handler = DataHandler()
+        self.column_info = self.data_handler.get_column_info()
 
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
@@ -95,7 +97,7 @@ class MainWindow(QMainWindow):
     def load_data(self):
         file_path, _ = QFileDialog.getOpenFileName(self, 'Open File', '', 'Excel Files (*.xlsx)')
         if file_path:
-            self.data_handler.load_data(file_path)
+            self.data_handler.load_data2(file_path)
             self.display_data()
             self.populate_combo_boxes()
 
@@ -180,9 +182,72 @@ class MainWindow(QMainWindow):
         self.table_widget.setColumnCount(data.shape[1])
         self.table_widget.setHorizontalHeaderLabels(data.columns)
 
+        # 추가 계산이 필요한 컬럼을 먼저 조사
+        column_info = self.data_handler.get_column_info()
+        true_formula_indices = [index for index, details in column_info.items() if details['is_formula']]
+
+        # 결과 출력
+        print(true_formula_indices)
+
+
+        # 이 부분에 수식을 계산해서 숫자로 변환하는 코드 추가
         for i in range(data.shape[0]):
             for j in range(data.shape[1]):
-                self.table_widget.setItem(i, j, QTableWidgetItem(str(data.iat[i, j])))
+                print(f"i: {i}, j: {j}")
+                if j in true_formula_indices:
+                    print("to calculate for j")
+                    calculated_value = self.calculate_formula(i, j)
+                    self.table_widget.setItem(i, j, QTableWidgetItem(str(calculated_value)))
+                else:
+                    self.table_widget.setItem(i, j, QTableWidgetItem(str(data.iat[i, j])))
+
+    def calculate_formula(self, row, col):
+        data = self.data_handler.get_data()
+        print("====================================================")
+        print(data)
+        print("====================================================")
+        print(self.column_info)
+        formula = self.column_info[col]['formula']
+        # '=' 문자 제거
+        formula = formula.lstrip('=')
+        # 숫자 제거
+        formula = re.sub(r'\d+', '', formula)
+
+        print(f"formula: {formula}")
+
+        # 변수에 대응하는 값을 저장할 딕셔너리
+        variables = {}
+
+        # 각 변수에 대응하는 숫자를 사용자로부터 입력받기
+        for char in formula:
+            print(f"char: {char}")
+            if char.isalpha():  # 알파벳인지 확인
+                if char not in variables:  # 이미 입력받은 변수는 건너뜀
+                    index_by_alphabet = None
+                    for index, details in self.column_info.items():
+                        if details.get('alphabet') == char:
+                            index_by_alphabet = index
+                            print(f"index_by_alphabet: {index_by_alphabet}")
+                            break
+
+                    print(f"row: {row}, index_by_alphabet: {index_by_alphabet}")
+                    value = data.iat[row, index_by_alphabet]
+                    # value = data.iat[1, 1]
+                    print(f"value: {value}")
+                    variables[char] = value
+                    print(variables)
+
+        # 변수 대입 및 계산
+        for var, value in variables.items():
+            formula = formula.replace(var, str(value))
+
+        # 계산 수행
+        result = eval(formula)
+
+        # 결과 출력
+        print(f"계산 결과: {result}")
+        return result
+
 
     @pyqtSlot(dict)
     def display_selected_point(self, point):
