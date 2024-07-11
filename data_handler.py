@@ -199,21 +199,20 @@ class DataHandler:
             self.data.to_excel(writer, index=False, sheet_name='Sheet1')
             writer.close()
 
-            # openpyxl을 사용하여 수식을 업데이트
-            wb = openpyxl.load_workbook(file_path)
-            sheet = wb['Sheet1']
-
-            for col in self.formula_columns:
-                print(f"col: {col}")
-                for row_idx, value in enumerate(self.data[col], start=2):
-                    cell_reference = f"{col}{row_idx}"
-                    print(f"cell_reference: {cell_reference}")
-                    original_formula = value
-                    print(f"original_formula: {original_formula}")
-                    if isinstance(original_formula, str) and original_formula.startswith('='):
-                        sheet[cell_reference].value = original_formula
-
-            wb.save(file_path)
+            # # openpyxl을 사용하여 수식을 업데이트
+            # wb = openpyxl.load_workbook(file_path)
+            # sheet = wb['Sheet1']
+            # # for col in self.formula_columns:
+            # #     print(f"col: {col}")
+            # #     for row_idx, value in enumerate(self.data[col], start=2):
+            # #         cell_reference = f"{col}{row_idx}"
+            # #         print(f"cell_reference: {cell_reference}")
+            # #         original_formula = value
+            # #         print(f"original_formula: {original_formula}")
+            # #         if isinstance(original_formula, str) and original_formula.startswith('='):
+            # #             sheet[cell_reference].value = original_formula
+            # #
+            # # wb.save(file_path)
 
             # # 수식을 원래 상태로 되돌려 저장
             # for col in self.formula_columns:

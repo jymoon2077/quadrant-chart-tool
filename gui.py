@@ -5,6 +5,7 @@ from chart import ChartCanvas
 from data_handler import DataHandler
 import sys
 import re
+import pandas as pd
 
 
 class MainWindow(QMainWindow):
@@ -18,6 +19,7 @@ class MainWindow(QMainWindow):
         self.y_column = ''
         self.x_column_index = -1
         self.y_column_index = -1
+        self.chart_data = None
 
         self.data_handler = DataHandler()
         self.column_info = self.data_handler.get_column_info()
@@ -102,6 +104,12 @@ class MainWindow(QMainWindow):
             self.populate_combo_boxes()
 
     def plot_chart(self):
+
+        self.update_data_from_gui() # 테스트용
+
+
+
+
         self.x_column = self.x_combo_box.currentText()
         self.y_column = self.y_combo_box.currentText()
 
@@ -134,8 +142,17 @@ class MainWindow(QMainWindow):
                 break
 
 
-        chart_data = self.data_handler.get_chart_data(self.x_column, self.y_column)
+        # chart_data = self.data_handler.get_chart_data(self.x_column, self.y_column)
+        # if chart_data is not None:
+        #     self.chart_canvas.plot(chart_data, self.x_column, self.y_column)
+
+        # GUI 테이블로부터 데이터 가져와서 차트 그리기
+
+        chart_data = self.get_table_data()[[self.x_column, self.y_column, 'Key', 'Summary']]
         if chart_data is not None:
+            print("================== chart data =======================")
+            print(chart_data)
+            print("================== chart data =======================")
             self.chart_canvas.plot(chart_data, self.x_column, self.y_column)
 
     def save_changes(self):
@@ -203,10 +220,10 @@ class MainWindow(QMainWindow):
 
     def calculate_formula(self, row, col):
         data = self.data_handler.get_data()
-        print("====================================================")
-        print(data)
-        print("====================================================")
-        print(self.column_info)
+        # print("====================================================")
+        # print(data)
+        # print("====================================================")
+        # print(self.column_info)
         formula = self.column_info[col]['formula']
         # '=' 문자 제거
         formula = formula.lstrip('=')
@@ -220,22 +237,22 @@ class MainWindow(QMainWindow):
 
         # 각 변수에 대응하는 숫자를 사용자로부터 입력받기
         for char in formula:
-            print(f"char: {char}")
+            #print(f"char: {char}")
             if char.isalpha():  # 알파벳인지 확인
                 if char not in variables:  # 이미 입력받은 변수는 건너뜀
                     index_by_alphabet = None
                     for index, details in self.column_info.items():
                         if details.get('alphabet') == char:
                             index_by_alphabet = index
-                            print(f"index_by_alphabet: {index_by_alphabet}")
+                            # print(f"index_by_alphabet: {index_by_alphabet}")
                             break
 
-                    print(f"row: {row}, index_by_alphabet: {index_by_alphabet}")
+                    #print(f"row: {row}, index_by_alphabet: {index_by_alphabet}")
                     value = data.iat[row, index_by_alphabet]
                     # value = data.iat[1, 1]
-                    print(f"value: {value}")
+                    #print(f"value: {value}")
                     variables[char] = value
-                    print(variables)
+                    #print(variables)
 
         # 변수 대입 및 계산
         for var, value in variables.items():
@@ -290,3 +307,55 @@ class MainWindow(QMainWindow):
                 break
 
 
+    def update_data_from_gui(self):
+        print("update_data_from_gui")
+        # GUI 테이블에서 변경된 값을 DataFrame에 저장
+        # 수식이 없는 컬럼은 값을 그대로 저장하고
+        # 수식이 있는 컬럼은 저장 없이 계산만 하여 보여준다
+
+        # 저장할 DataFrame 가져오기
+        data = self.data_handler.get_data()
+
+        # 추가 계산이 필요한 컬럼을 먼저 조사
+        column_info = self.data_handler.get_column_info()
+        true_formula_indices = [index for index, details in column_info.items() if details['is_formula']]
+
+        # 결과 출력
+        print(true_formula_indices)
+
+        # 이 부분에 수식을 계산해서 숫자로 변환하는 코드 추가
+        for i in range(data.shape[0]):
+            for j in range(data.shape[1]):
+                print(f"i: {i}, j: {j}")
+                if j in true_formula_indices:
+                    print("to calculate for j")
+                    calculated_value = self.calculate_formula(i, j)
+                    self.table_widget.setItem(i, j, QTableWidgetItem(str(calculated_value)))
+                else:
+                    print("only save data for j")
+                    # self.table_widget.setItem(i, j, QTableWidgetItem(str(data.iat[i, j])))
+                    data.iat[i, j] = self.table_widget.item(i,j).text()
+
+    def get_table_data(self):
+        print("get_table_data!")
+        rows = self.table_widget.rowCount()
+        cols = self.table_widget.columnCount()
+        data = []
+
+        headers = [self.table_widget.horizontalHeaderItem(j).text() for j in range(cols)]
+
+        for i in range(rows):
+            row_data = []
+            for j in range(cols):
+                item = self.table_widget.item(i, j)
+                row_data.append(item.text() if item else '')
+            data.append(row_data)
+
+
+        print("================== table data =======================")
+        print(data)
+        print("================== table data =======================")
+        df = pd.DataFrame(data, columns=headers)
+        df.index = range(1, len(df) + 1)
+
+        return df

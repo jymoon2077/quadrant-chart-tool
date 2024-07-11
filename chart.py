@@ -25,6 +25,7 @@ class ChartCanvas(FigureCanvas):
 
     @pyqtSlot(pd.DataFrame, str, str)
     def plot(self, data, x_label, y_label):
+        print("plot")
         self.data = data
         self.x_label = x_label
         self.y_label = y_label
@@ -35,6 +36,7 @@ class ChartCanvas(FigureCanvas):
         self.update_plot()
 
     def update_plot(self):
+        print("update_plot")
         self.axes.clear()
         if self.data is not None:
             x_data = self.data.iloc[:, 0].astype(np.float64)
