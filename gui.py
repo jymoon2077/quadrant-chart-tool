@@ -283,13 +283,6 @@ class MainWindow(QMainWindow):
         )
         self.selected_point_label.setText(info)
 
-    def update_table_cell_color(self, key):
-        # 테이블의 셀 색상 변경 함수
-        for row in range(self.table_widget.rowCount()):
-            item = self.table_widget.item(row, 0)  # Key 열에 해당하는 item 가져오기
-            if item.text() == key:
-                item.setBackground(Qt.yellow)  # 변경된 데이터의 셀을 노란색으로 표시
-
     @pyqtSlot(str, float, float)
     def handle_point_drop(self, key, x, y):
         # 이 메서드에서 왼쪽 테이블의 값을 변경하고 표시를 업데이트할 수 있음
@@ -308,8 +301,19 @@ class MainWindow(QMainWindow):
                 # 보여지는 테이블 데이터 변경
                 self.table_widget.item(row, self.x_column_index).setText(str(new_x_value))  # Update X value
                 self.table_widget.item(row, self.x_column_index).setBackground(Qt.yellow)
+
+                font = self.table_widget.item(row, self.x_column_index).font()
+                font.setItalic(True)
+                self.table_widget.item(row, self.x_column_index).setForeground(Qt.darkBlue)
+                self.table_widget.item(row, self.x_column_index).setFont(font)
+
                 self.table_widget.item(row, self.y_column_index).setText(str(new_y_value))  # Update Y value
                 self.table_widget.item(row, self.y_column_index).setBackground(Qt.yellow)
+                font = self.table_widget.item(row, self.y_column_index).font()
+                font.setItalic(True)
+                self.table_widget.item(row, self.y_column_index).setForeground(Qt.darkBlue)
+                self.table_widget.item(row, self.y_column_index).setFont(font)
+
 
                 # # 실제 DataFrame 변경
                 # self.data_handler.data.at[row, self.x_column] = new_x_value
