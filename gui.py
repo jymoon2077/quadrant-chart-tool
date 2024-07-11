@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel, QHBoxLayout, QPushButton, \
-    QTableWidget, QTableWidgetItem, QFileDialog, QComboBox, QSplitter, QMessageBox
+    QTableWidget, QTableWidgetItem, QFileDialog, QComboBox, QSplitter, QMessageBox, QHeaderView
 from PyQt5.QtCore import Qt, pyqtSlot
 from chart import ChartCanvas
 from data_handler import DataHandler
@@ -66,15 +66,27 @@ class MainWindow(QMainWindow):
         self.table_widget = QTableWidget()
         self.left_layout.addWidget(self.table_widget)
 
+
+        self.chartview_layout = QHBoxLayout()
         # 선택된 데이터 포인트 정보를 표시할 레이블
         self.selected_point_label = QLabel('Selected Point: None')
-        self.right_layout.addWidget(self.selected_point_label, 1)
+        self.chartview_layout.addWidget(self.selected_point_label)
+        h_widget = QWidget()
+        h_widget.setLayout(self.chartview_layout)
+        h_widget.setFixedHeight(100)
+        self.right_layout.addWidget(h_widget)
+        # self.right_layout.addWidget(self.selected_point_label, 1)
 
         # 차트 캔버스 생성
         self.chart_canvas = ChartCanvas(self)
         self.chart_canvas.point_selected.connect(self.display_selected_point)  # Signal 연결
         self.chart_canvas.point_dropped.connect(self.handle_point_drop)  # Signal 연결
-        self.right_layout.addWidget(self.chart_canvas, 9)
+        self.right_layout.addWidget(self.chart_canvas, 8)
+
+        # Reverse Chart 버튼 추가
+        self.reverse_chart_button = QPushButton('Reverse Chart')
+        self.reverse_chart_button.clicked.connect(self.chart_canvas.reverse_chart)
+        self.chartview_layout.addWidget(self.reverse_chart_button)
 
         # QSplitter를 사용하여 레이아웃 나누기
         self.splitter = QSplitter(Qt.Horizontal)
@@ -211,6 +223,7 @@ class MainWindow(QMainWindow):
                     self.table_widget.setItem(i, j, QTableWidgetItem(str(calculated_value)))
                 else:
                     self.table_widget.setItem(i, j, QTableWidgetItem(str(data.iat[i, j])))
+
 
     def calculate_formula(self, row, col):
         data = self.data_handler.get_data()

@@ -18,6 +18,7 @@ class ChartCanvas(FigureCanvas):
         self.setParent(parent)
         self.selected_point = None
         self.data = None
+        self.is_reversed = False
 
         self.cid = self.mpl_connect('button_press_event', self.on_click)
         self.cidmotion = self.mpl_connect('motion_notify_event', self.on_motion)
@@ -61,8 +62,12 @@ class ChartCanvas(FigureCanvas):
                 self.axes.annotate(key, (x_data.iloc[i], y_data.iloc[i]), bbox=dict(facecolor=colors[i], alpha=0.5))
 
             # X축과 Y축의 범위를 데이터의 최대 값에 맞추어 설정
-            self.axes.set_xlim(0, x_max)
-            self.axes.set_ylim(0, y_max)
+            if self.is_reversed:
+                self.axes.set_xlim(x_max, 0)
+                self.axes.set_ylim(y_max, 0)
+            else:
+                self.axes.set_xlim(0, x_max)
+                self.axes.set_ylim(0, y_max)
 
             self.axes.set_title('Quadrant Chart', color='green')
             self.axes.set_xlabel(self.x_label, color='red')
@@ -105,8 +110,16 @@ class ChartCanvas(FigureCanvas):
             # Update the data frame with new coordinates
             if event.xdata is not None and event.ydata is not None:
                 key = self.selected_point['Key']
-                new_x = min(max(event.xdata, self.axes.get_xlim()[0]), self.axes.get_xlim()[1])
-                new_y = min(max(event.ydata, self.axes.get_ylim()[0]), self.axes.get_ylim()[1])
+                # new_x = min(max(event.xdata, self.axes.get_xlim()[0]), self.axes.get_xlim()[1])
+                # new_y = min(max(event.ydata, self.axes.get_ylim()[0]), self.axes.get_ylim()[1])
+
+                if self.is_reversed:
+                    new_x = max(min(self.axes.get_xlim()[0], event.xdata), self.axes.get_xlim()[1])
+                    new_y = max(min(self.axes.get_ylim()[0], event.ydata), self.axes.get_ylim()[1])
+                else:
+                    new_x = min(max(event.xdata, self.axes.get_xlim()[0]), self.axes.get_xlim()[1])
+                    new_y = min(max(event.ydata, self.axes.get_ylim()[0]), self.axes.get_ylim()[1])
+
                 self.data.loc[self.data['Key'] == key, self.x_label] = new_x
                 self.data.loc[self.data['Key'] == key, self.y_label] = new_y
                 self.update_plot()
@@ -117,6 +130,12 @@ class ChartCanvas(FigureCanvas):
             key = self.selected_point['Key']
             new_x = round(event.xdata, 1)
             new_y = round(event.ydata, 1)
+
+            if self.is_reversed:
+                new_x = max(min(self.axes.get_xlim()[0], new_x), self.axes.get_xlim()[1])
+                new_y = max(min(self.axes.get_ylim()[0], new_y), self.axes.get_ylim()[1])
+
+
             self.data.loc[self.data['Key'] == key, self.x_label] = new_x
             self.data.loc[self.data['Key'] == key, self.y_label] = new_y
             self.update_plot()
@@ -173,3 +192,8 @@ class ChartCanvas(FigureCanvas):
                 self.table_widget.setItem(row, 2, QTableWidgetItem(str(new_y)))
                 # 셀 색상 변경 등 추가적인 표시를 원하면 여기에서 처리 가능
                 break
+
+    @pyqtSlot()
+    def reverse_chart(self):
+        self.is_reversed = not self.is_reversed
+        self.update_plot()
