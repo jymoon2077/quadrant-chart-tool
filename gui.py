@@ -105,46 +105,13 @@ class MainWindow(QMainWindow):
 
     def plot_chart(self):
 
-        self.update_data_from_gui() # 테스트용
+        if self.get_table_data() is not None:
+            # 현재 테이블에 노출되는 데이터를 저장한다
+            self.update_data_from_gui()  # 테스트용
 
-
-
-
-        self.x_column = self.x_combo_box.currentText()
-        self.y_column = self.y_combo_box.currentText()
-
-        if self.x_column == "" or self.y_column == "":
-            QMessageBox.critical(self, 'Error', 'X and Y axes must be selected.')
+        # X, Y축 선택 여부를 체크하고 축 정보를 저장한다
+        if self.check_axes_selection() is False:
             return
-
-        if self.x_column == self.y_column:
-            QMessageBox.critical(self, 'Error', 'X and Y axes must be different.')
-            self.y_combo_box.setCurrentIndex(-1)
-            return
-
-        header = self.table_widget.horizontalHeader()
-        model = header.model()
-        column_count = header.count()
-        print(column_count)
-
-        for i in range(column_count):
-            text = model.headerData(i, Qt.Horizontal)
-            print(i)
-            print(text)
-            # item = header
-            # print(item.text())
-            # print(self.x_column)
-            if text == self.x_column:
-                self.x_column_index = i
-            elif text == self.y_column:
-                self.y_column_index = i
-            elif self.x_column_index != -1 & self.y_column_index != -1:
-                break
-
-
-        # chart_data = self.data_handler.get_chart_data(self.x_column, self.y_column)
-        # if chart_data is not None:
-        #     self.chart_canvas.plot(chart_data, self.x_column, self.y_column)
 
         # GUI 테이블로부터 데이터 가져와서 차트 그리기
 
@@ -184,14 +151,42 @@ class MainWindow(QMainWindow):
         self.y_combo_box.setCurrentText(current_x)
 
         # X와 Y 축이 동일한지 검사하는 슬롯 추가
-    def check_axes_selection(self):
-        selected_x = self.x_combo_box.currentText()
-        selected_y = self.y_combo_box.currentText()
 
-        if selected_x == selected_y:
+
+    def check_axes_selection(self):
+        # X, Y축 선택 여부를 체크한다
+        self.x_column = self.x_combo_box.currentText()
+        self.y_column = self.y_combo_box.currentText()
+
+        if self.x_column == "" or self.y_column == "":
+            QMessageBox.critical(self, 'Error', 'X and Y axes must be selected.')
+            return False
+
+        if self.x_column == self.y_column:
             QMessageBox.critical(self, 'Error', 'X and Y axes must be different.')
-            # X와 Y 축이 동일한 경우, X 축 콤보 박스를 초기 상태로 되돌림
             self.y_combo_box.setCurrentIndex(-1)
+            return False
+
+        header = self.table_widget.horizontalHeader()
+        model = header.model()
+        column_count = header.count()
+        print(column_count)
+
+        for i in range(column_count):
+            text = model.headerData(i, Qt.Horizontal)
+            print(i)
+            print(text)
+            # item = header
+            # print(item.text())
+            # print(self.x_column)
+            if text == self.x_column:
+                self.x_column_index = i
+            elif text == self.y_column:
+                self.y_column_index = i
+            elif self.x_column_index != -1 & self.y_column_index != -1:
+                break
+
+        return True
 
     def display_data(self):
         data = self.data_handler.get_data()
@@ -205,7 +200,6 @@ class MainWindow(QMainWindow):
 
         # 결과 출력
         print(true_formula_indices)
-
 
         # 이 부분에 수식을 계산해서 숫자로 변환하는 코드 추가
         for i in range(data.shape[0]):
@@ -260,17 +254,21 @@ class MainWindow(QMainWindow):
 
         # 계산 수행
         result = eval(formula)
-
+        rounded_result = round(result, 1)
         # 결과 출력
-        print(f"계산 결과: {result}")
-        return result
-
+        print(f"계산 결과: {rounded_result}")
+        return rounded_result
 
     @pyqtSlot(dict)
     def display_selected_point(self, point):
-        info = f"Selected Point: Key={point['Key']}, X={point['x']}, Y={point['y']}, Summary={point['Summary']}"
+        info = (
+            f"<b>Selected Point:</b><br>"
+            f"<b>Key:</b> {point['Key']}<br>"
+            f"<b>Summary:</b> {point['Summary']}<br>"
+            f"<b>X:</b> {point['x']}<br>"
+            f"<b>Y:</b> {point['y']}<br>"
+        )
         self.selected_point_label.setText(info)
-
 
     def update_table_cell_color(self, key):
         # 테이블의 셀 색상 변경 함수
@@ -300,12 +298,11 @@ class MainWindow(QMainWindow):
                 self.table_widget.item(row, self.y_column_index).setText(str(new_y_value))  # Update Y value
                 self.table_widget.item(row, self.y_column_index).setBackground(Qt.yellow)
 
-                # 실제 DataFrame 변경
-                self.data_handler.data.at[row, self.x_column] = new_x_value
-                self.data_handler.data.at[row, self.y_column] = new_y_value
+                # # 실제 DataFrame 변경
+                # self.data_handler.data.at[row, self.x_column] = new_x_value
+                # self.data_handler.data.at[row, self.y_column] = new_y_value
 
                 break
-
 
     def update_data_from_gui(self):
         print("update_data_from_gui")
@@ -323,6 +320,10 @@ class MainWindow(QMainWindow):
         # 결과 출력
         print(true_formula_indices)
 
+        print("========================== update_data =============================")
+        print(data)
+        print("========================== update_data =============================")
+
         # 이 부분에 수식을 계산해서 숫자로 변환하는 코드 추가
         for i in range(data.shape[0]):
             for j in range(data.shape[1]):
@@ -334,7 +335,11 @@ class MainWindow(QMainWindow):
                 else:
                     print("only save data for j")
                     # self.table_widget.setItem(i, j, QTableWidgetItem(str(data.iat[i, j])))
-                    data.iat[i, j] = self.table_widget.item(i,j).text()
+                    # data.iat[i, j] = self.table_widget.item(i, j).text()
+                    cell_value = self.table_widget.item(i, j).text()
+                    if cell_value is None:
+                        cell_value = ''  # None을 빈 문자열로 대체
+                    data.iat[i, j] = cell_value
 
     def get_table_data(self):
         print("get_table_data!")
@@ -350,7 +355,6 @@ class MainWindow(QMainWindow):
                 item = self.table_widget.item(i, j)
                 row_data.append(item.text() if item else '')
             data.append(row_data)
-
 
         print("================== table data =======================")
         print(data)

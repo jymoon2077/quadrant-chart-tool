@@ -82,6 +82,7 @@ class ChartCanvas(FigureCanvas):
         if not contains:
             return
 
+        # 선택한 data point 의 정보를 상단에 노출
         ind = attr['ind'][0]
         self.press = ind, self.data.iloc[ind][self.x_label], self.data.iloc[ind][self.y_label]
 
@@ -91,9 +92,9 @@ class ChartCanvas(FigureCanvas):
             "y": self.data.iloc[ind][self.y_label],
             "Summary": self.data.iloc[ind]["Summary"]
         }
-
         self.point_selected.emit(self.selected_point)
 
+        #
         self.background = self.figure.canvas.copy_from_bbox(self.axes.bbox)
         self.axes.draw_artist(self.scatter)
         self.figure.canvas.blit(self.axes.bbox)
@@ -102,20 +103,67 @@ class ChartCanvas(FigureCanvas):
         if self.selected_point is not None:
             print("on_motion")
             # Update the data frame with new coordinates
-            key = self.selected_point['Key']
-            new_x = min(max(event.xdata, self.axes.get_xlim()[0]), self.axes.get_xlim()[1])
-            new_y = min(max(event.ydata, self.axes.get_ylim()[0]), self.axes.get_ylim()[1])
-            self.data.loc[self.data['Key'] == key, self.x_label] = new_x
-            self.data.loc[self.data['Key'] == key, self.y_label] = new_y
-            self.update_plot()
+            if event.xdata is not None and event.ydata is not None:
+                key = self.selected_point['Key']
+                new_x = min(max(event.xdata, self.axes.get_xlim()[0]), self.axes.get_xlim()[1])
+                new_y = min(max(event.ydata, self.axes.get_ylim()[0]), self.axes.get_ylim()[1])
+                self.data.loc[self.data['Key'] == key, self.x_label] = new_x
+                self.data.loc[self.data['Key'] == key, self.y_label] = new_y
+                self.update_plot()
 
     def on_release(self, event):
         if self.selected_point is not None:
-            print("on_release!")
-            new_x = min(max(event.xdata, self.axes.get_xlim()[0]), self.axes.get_xlim()[1])
-            new_y = min(max(event.ydata, self.axes.get_ylim()[0]), self.axes.get_ylim()[1])
-            self.point_dropped.emit(self.selected_point['Key'], new_x, new_y)
+            print("on_release")
+            key = self.selected_point['Key']
+            new_x = round(event.xdata, 1)
+            new_y = round(event.ydata, 1)
+            self.data.loc[self.data['Key'] == key, self.x_label] = new_x
+            self.data.loc[self.data['Key'] == key, self.y_label] = new_y
+            self.update_plot()
+            self.point_dropped.emit(key, new_x, new_y)
+
+            # 업데이트된 data point 의 정보를 상단에 노출
+            self.selected_point['x'] = new_x
+            self.selected_point['y'] = new_y
+            self.point_selected.emit(self.selected_point)
+
             self.selected_point = None
+
+            print("============================ chart.py data =================================")
+            print(self.data)
+            print("============================ chart.py data =================================")
+
+
+    def update_point(self, event, final=False):
+        if self.selected_point is None:
+            return
+
+        xdata = self.selected_point.get_xdata()
+        ydata = self.selected_point.get_ydata()
+
+        x, y = event.xdata, event.ydata
+
+        if final:
+            x = round(x, 1)
+            y = round(y, 1)
+
+        index = np.argmin(np.hypot(xdata - x, ydata - y))
+        xdata[index], ydata[index] = x, y
+        self.selected_point.set_xdata(xdata)
+        self.selected_point.set_ydata(ydata)
+
+        if final and self.data is not None:
+            # 데이터 업데이트 (GUI 데이터인지 확인 필요!)
+            self.data.at[index, self.x_column] = x
+            self.data.at[index, self.y_column] = y
+
+            # 차트 상단 Data Point 정보 업데이트 시그널
+            self.point_selected.emit(self.selected_point)
+
+            # 테이블 GUI 업데이트
+            self.point_dropped.emit(self.selected_point['Key'], x, y)
+
+        self.draw()
 
     def update_table(self, key, new_x, new_y):
         # key를 이용하여 테이블에서 해당 행을 찾고, X, Y 값을 업데이트
