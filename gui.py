@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel, QHBoxLayout, QPushButton, \
     QTableWidget, QTableWidgetItem, QFileDialog, QComboBox, QSplitter, QMessageBox, QHeaderView
 from PyQt5.QtCore import Qt, pyqtSlot
+from PyQt5.QtGui import QFont, QColor
 from chart import ChartCanvas
 from data_handler import DataHandler
 import re
@@ -120,6 +121,7 @@ class MainWindow(QMainWindow):
         # 현재 테이블에 노출되는 데이터를 업데이트하여 저장한다
         if self.get_table_data() is not None:
             self.update_data_from_gui()
+            self.reset_table_style()
 
         # X, Y축 선택 여부를 체크하고 축 정보를 저장한다
         if self.check_axes_selection() is False:
@@ -181,9 +183,11 @@ class MainWindow(QMainWindow):
             text = model.headerData(i, Qt.Horizontal)
             if text == self.x_column:
                 self.x_column_index = i
-            elif text == self.y_column:
+
+            if text == self.y_column:
                 self.y_column_index = i
-            elif self.x_column_index != -1 & self.y_column_index != -1:
+
+            if self.x_column_index != -1 and self.y_column_index != -1:
                 break
 
         return True
@@ -270,7 +274,7 @@ class MainWindow(QMainWindow):
             item = self.table_widget.item(row, 0)
             if item is not None and item.text() == key_to_update:
                 print("Key found!")
-
+                print(f"row: {row}, x_column_index: {self.x_column_index}, y_column_index: {self.y_column_index}")
                 # 보여지는 테이블 데이터 변경 X
                 self.table_widget.item(row, self.x_column_index).setText(str(new_x_value))
                 self.table_widget.item(row, self.x_column_index).setBackground(Qt.yellow)
@@ -346,3 +350,17 @@ class MainWindow(QMainWindow):
         df.index = range(1, len(df) + 1)
 
         return df
+
+    def reset_table_style(self):
+        # 기본 폰트 및 색상 설정
+        default_font = QFont()
+        default_background = QColor(Qt.white)
+        default_foreground = QColor(Qt.black)
+
+        for row in range(self.table_widget.rowCount()):
+            for column in range(self.table_widget.columnCount()):
+                item = self.table_widget.item(row, column)
+                if item:
+                    item.setBackground(default_background)
+                    item.setForeground(default_foreground)
+                    item.setFont(default_font)
