@@ -1,4 +1,3 @@
-from PyQt5.QtWidgets import QWidget
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt
@@ -51,16 +50,19 @@ class ChartCanvas(FigureCanvas):
             x_data = self.data.iloc[:, 0].astype(np.float64)
             y_data = self.data.iloc[:, 1].astype(np.float64)
 
-            # 사분면 색상 설정
-            # x_max, y_max = x_data.max(), y_data.max()
-            # x_mid, y_mid = x_max / 2, y_max / 2
-
+            # 사분면 크기 설정
             x_max, y_max = self.chart_size_x, self.chart_size_y
             x_mid, y_mid = x_max / 2, y_max / 2
 
+            # X축과 Y축의 범위를 데이터의 최대 값에 맞추어 설정 - 스펙 확인 필요
+            # x_max = math.ceil(x_max * 1.1)
+            # y_max = math.ceil(y_max * 1.1)
+
+            # 사분면 선 그리기
             self.axes.axhline(y=y_mid, color='black', linestyle='--')
             self.axes.axvline(x=x_mid, color='black', linestyle='--')
 
+            # 사분면 배경 그리기
             self.axes.fill_between([0, x_mid], y_mid, y_max, color='red', alpha=0.1)
             self.axes.fill_between([x_mid, x_max], y_mid, y_max, color='blue', alpha=0.1)
             self.axes.fill_between([0, x_mid], 0, y_mid, color='green', alpha=0.1)
@@ -69,13 +71,18 @@ class ChartCanvas(FigureCanvas):
             colors = self.data['Color'].tolist()
             self.scatter = self.axes.scatter(x_data, y_data, c=colors, picker=True)
 
+            # 차트 데이터 생성
             for i, key in enumerate(self.data['Key']):
                 annotate = self.axes.annotate(key, (x_data.iloc[i], y_data.iloc[i]),
                                               bbox=dict(facecolor=colors[i], alpha=0.5))
                 self.annotates.append(annotate)
 
 
-            # X축과 Y축의 범위를 데이터의 최대 값에 맞추어 설정
+            # # X축과 Y축의 범위를 데이터의 최대 값에 맞추어 설정
+            # x_max = math.ceil(x_max * 1.1)
+            # y_max = math.ceil(y_max * 1.1)
+
+            # 사분면 X, Y 범위 설정
             if self.is_reversed:
                 self.axes.set_xlim(x_max, 0)
                 self.axes.set_ylim(y_max, 0)
@@ -98,22 +105,6 @@ class ChartCanvas(FigureCanvas):
             self.chart_size_x = x_data.max()
             self.chart_size_y = y_data.max()
 
-
-    def adjust_annotate_position(self, annotate):
-        self.draw()
-        renderer = self.figure.canvas.get_renderer()
-        bbox = annotate.get_window_extent(renderer)
-        ax_bbox = self.axes.get_window_extent(renderer)
-
-        if bbox.x0 < ax_bbox.x0:
-            annotate.xy = (annotate.xy[0] + (ax_bbox.x0 - bbox.x0) / self.figure.dpi, annotate.xy[1])
-        if bbox.x1 > ax_bbox.x1:
-            annotate.xy = (annotate.xy[0] - (bbox.x1 - ax_bbox.x1) / self.figure.dpi, annotate.xy[1])
-        if bbox.y0 < ax_bbox.y0:
-            annotate.xy = (annotate.xy[0], annotate.xy[1] + (ax_bbox.y0 - bbox.y0) / self.figure.dpi)
-        if bbox.y1 > ax_bbox.y1:
-            annotate.xy = (annotate.xy[0], annotate.xy[1] - (bbox.y1 - ax_bbox.y1) / self.figure.dpi)
-
     def random_color(self):
         r = lambda: random.randint(0, 255)
         return f'#{r():02x}{r():02x}{r():02x}'
@@ -122,21 +113,7 @@ class ChartCanvas(FigureCanvas):
         if event.inaxes != self.axes:
             return
 
-        # contains, attr = self.scatter.contains(event)
-        # if not contains:
-        #     return
-        #
-        # # 선택한 data point 의 정보를 상단에 노출
-        # ind = attr['ind'][0]
-        # self.press = ind, self.data.iloc[ind][self.x_label], self.data.iloc[ind][self.y_label]
-        #
-        # self.selected_point = {
-        #     "Key": self.data.iloc[ind]["Key"],
-        #     "x": self.data.iloc[ind][self.x_label],
-        #     "y": self.data.iloc[ind][self.y_label],
-        #     "Summary": self.data.iloc[ind]["Summary"]
-        # }
-        # self.point_selected.emit(self.selected_point)
+        print("on_click!")
 
         for annotate in self.annotates:
             contains, attr = annotate.contains(event)
@@ -201,51 +178,6 @@ class ChartCanvas(FigureCanvas):
             self.point_selected.emit(self.selected_point)
 
             self.selected_point = None
-
-            print("============================ chart.py data =================================")
-            print(self.data)
-            print("============================ chart.py data =================================")
-
-
-    def update_point(self, event, final=False):
-        if self.selected_point is None:
-            return
-
-        xdata = self.selected_point.get_xdata()
-        ydata = self.selected_point.get_ydata()
-
-        x, y = event.xdata, event.ydata
-
-        if final:
-            x = round(x, 1)
-            y = round(y, 1)
-
-        index = np.argmin(np.hypot(xdata - x, ydata - y))
-        xdata[index], ydata[index] = x, y
-        self.selected_point.set_xdata(xdata)
-        self.selected_point.set_ydata(ydata)
-
-        if final and self.data is not None:
-            # 데이터 업데이트 (GUI 데이터인지 확인 필요!)
-            self.data.at[index, self.x_column] = x
-            self.data.at[index, self.y_column] = y
-
-            # 차트 상단 Data Point 정보 업데이트 시그널
-            self.point_selected.emit(self.selected_point)
-
-            # 테이블 GUI 업데이트
-            self.point_dropped.emit(self.selected_point['Key'], x, y)
-
-        self.draw()
-
-    def update_table(self, key, new_x, new_y):
-        # key를 이용하여 테이블에서 해당 행을 찾고, X, Y 값을 업데이트
-        for row in range(self.table_widget.rowCount()):
-            if self.table_widget.item(row, 0).text() == key:
-                self.table_widget.setItem(row, 1, QTableWidgetItem(str(new_x)))
-                self.table_widget.setItem(row, 2, QTableWidgetItem(str(new_y)))
-                # 셀 색상 변경 등 추가적인 표시를 원하면 여기에서 처리 가능
-                break
 
     @pyqtSlot()
     def reverse_chart(self):
