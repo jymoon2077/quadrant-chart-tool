@@ -179,6 +179,9 @@ class MainWindow(QMainWindow):
         model = header.model()
         column_count = header.count()
 
+        self.x_column_index = -1
+        self.y_column_index = -1
+
         for i in range(column_count):
             text = model.headerData(i, Qt.Horizontal)
             if text == self.x_column:
@@ -190,6 +193,7 @@ class MainWindow(QMainWindow):
             if self.x_column_index != -1 and self.y_column_index != -1:
                 break
 
+        print(f"check_axes_selection -> x_column_index: {self.x_column_index}, y_column_index: {self.y_column_index}")
         return True
 
     def display_data(self):

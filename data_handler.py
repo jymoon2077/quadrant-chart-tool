@@ -4,7 +4,7 @@ import openpyxl
 class DataHandler:
     def __init__(self):
         self.data = None
-        self.formula_columns = []
+        # self.formula_columns = []
         self.column_info = {}
 
     def load_data(self, file_path):
