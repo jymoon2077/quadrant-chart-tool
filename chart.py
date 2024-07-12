@@ -19,6 +19,7 @@ class ChartCanvas(FigureCanvas):
         self.selected_point = None
         self.data = None
         self.is_reversed = False
+        self.annotates = []
 
         self.cid = self.mpl_connect('button_press_event', self.on_click)
         self.cidmotion = self.mpl_connect('motion_notify_event', self.on_motion)
@@ -39,6 +40,8 @@ class ChartCanvas(FigureCanvas):
     def update_plot(self):
         print("update_plot")
         self.axes.clear()
+        self.annotates = []
+
         if self.data is not None:
             x_data = self.data.iloc[:, 0].astype(np.float64)
             y_data = self.data.iloc[:, 1].astype(np.float64)
@@ -59,7 +62,9 @@ class ChartCanvas(FigureCanvas):
             self.scatter = self.axes.scatter(x_data, y_data, c=colors, picker=True)
 
             for i, key in enumerate(self.data['Key']):
-                self.axes.annotate(key, (x_data.iloc[i], y_data.iloc[i]), bbox=dict(facecolor=colors[i], alpha=0.5))
+                annotate = self.axes.annotate(key, (x_data.iloc[i], y_data.iloc[i]),
+                                              bbox=dict(facecolor=colors[i], alpha=0.5))
+                self.annotates.append(annotate)
 
             # X축과 Y축의 범위를 데이터의 최대 값에 맞추어 설정
             if self.is_reversed:
@@ -75,6 +80,21 @@ class ChartCanvas(FigureCanvas):
 
         self.draw()
 
+    def adjust_annotate_position(self, annotate):
+        self.draw()
+        renderer = self.figure.canvas.get_renderer()
+        bbox = annotate.get_window_extent(renderer)
+        ax_bbox = self.axes.get_window_extent(renderer)
+
+        if bbox.x0 < ax_bbox.x0:
+            annotate.xy = (annotate.xy[0] + (ax_bbox.x0 - bbox.x0) / self.figure.dpi, annotate.xy[1])
+        if bbox.x1 > ax_bbox.x1:
+            annotate.xy = (annotate.xy[0] - (bbox.x1 - ax_bbox.x1) / self.figure.dpi, annotate.xy[1])
+        if bbox.y0 < ax_bbox.y0:
+            annotate.xy = (annotate.xy[0], annotate.xy[1] + (ax_bbox.y0 - bbox.y0) / self.figure.dpi)
+        if bbox.y1 > ax_bbox.y1:
+            annotate.xy = (annotate.xy[0], annotate.xy[1] - (bbox.y1 - ax_bbox.y1) / self.figure.dpi)
+
     def random_color(self):
         r = lambda: random.randint(0, 255)
         return f'#{r():02x}{r():02x}{r():02x}'
@@ -83,21 +103,36 @@ class ChartCanvas(FigureCanvas):
         if event.inaxes != self.axes:
             return
 
-        contains, attr = self.scatter.contains(event)
-        if not contains:
-            return
+        # contains, attr = self.scatter.contains(event)
+        # if not contains:
+        #     return
+        #
+        # # 선택한 data point 의 정보를 상단에 노출
+        # ind = attr['ind'][0]
+        # self.press = ind, self.data.iloc[ind][self.x_label], self.data.iloc[ind][self.y_label]
+        #
+        # self.selected_point = {
+        #     "Key": self.data.iloc[ind]["Key"],
+        #     "x": self.data.iloc[ind][self.x_label],
+        #     "y": self.data.iloc[ind][self.y_label],
+        #     "Summary": self.data.iloc[ind]["Summary"]
+        # }
+        # self.point_selected.emit(self.selected_point)
 
-        # 선택한 data point 의 정보를 상단에 노출
-        ind = attr['ind'][0]
-        self.press = ind, self.data.iloc[ind][self.x_label], self.data.iloc[ind][self.y_label]
-
-        self.selected_point = {
-            "Key": self.data.iloc[ind]["Key"],
-            "x": self.data.iloc[ind][self.x_label],
-            "y": self.data.iloc[ind][self.y_label],
-            "Summary": self.data.iloc[ind]["Summary"]
-        }
-        self.point_selected.emit(self.selected_point)
+        for annotate in self.annotates:
+            contains, attr = annotate.contains(event)
+            if contains:
+                key = annotate.get_text()
+                if key in self.data['Key'].values:
+                    ind = self.data.index[self.data['Key'] == key].tolist()[0]
+                    self.selected_point = {
+                        "Key": key,
+                        "x": self.data.loc[ind, self.x_label],
+                        "y": self.data.loc[ind, self.y_label],
+                        "Summary": self.data.loc[ind, "Summary"]
+                    }
+                    self.point_selected.emit(self.selected_point)
+                break
 
         #
         self.background = self.figure.canvas.copy_from_bbox(self.axes.bbox)
