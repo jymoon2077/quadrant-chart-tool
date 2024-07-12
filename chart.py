@@ -20,6 +20,8 @@ class ChartCanvas(FigureCanvas):
         self.data = None
         self.is_reversed = False
         self.annotates = []
+        self.chart_size_x = 0
+        self.chart_size_y = 0
 
         self.cid = self.mpl_connect('button_press_event', self.on_click)
         self.cidmotion = self.mpl_connect('motion_notify_event', self.on_motion)
@@ -35,19 +37,25 @@ class ChartCanvas(FigureCanvas):
         if 'Color' not in self.data.columns:
             self.data['Color'] = [self.random_color() for _ in range(len(self.data))]
 
-        self.update_plot()
+        self.update_plot(True)
 
-    def update_plot(self):
+    def update_plot(self, force_redraw):
         print("update_plot")
         self.axes.clear()
         self.annotates = []
+
+        if force_redraw is True:
+            self.get_chart_max_size()
 
         if self.data is not None:
             x_data = self.data.iloc[:, 0].astype(np.float64)
             y_data = self.data.iloc[:, 1].astype(np.float64)
 
             # 사분면 색상 설정
-            x_max, y_max = x_data.max(), y_data.max()
+            # x_max, y_max = x_data.max(), y_data.max()
+            # x_mid, y_mid = x_max / 2, y_max / 2
+
+            x_max, y_max = self.chart_size_x, self.chart_size_y
             x_mid, y_mid = x_max / 2, y_max / 2
 
             self.axes.axhline(y=y_mid, color='black', linestyle='--')
@@ -66,6 +74,7 @@ class ChartCanvas(FigureCanvas):
                                               bbox=dict(facecolor=colors[i], alpha=0.5))
                 self.annotates.append(annotate)
 
+
             # X축과 Y축의 범위를 데이터의 최대 값에 맞추어 설정
             if self.is_reversed:
                 self.axes.set_xlim(x_max, 0)
@@ -79,6 +88,16 @@ class ChartCanvas(FigureCanvas):
             self.axes.set_ylabel(self.y_label, color='blue')
 
         self.draw()
+
+    def get_chart_max_size(self):
+        # 차트 사이즈를 현재 데이터 기준으로 갱신해야 할 때 호출
+        if self.data is not None:
+            x_data = self.data.iloc[:, 0].astype(np.float64)
+            y_data = self.data.iloc[:, 1].astype(np.float64)
+
+            self.chart_size_x = x_data.max()
+            self.chart_size_y = y_data.max()
+
 
     def adjust_annotate_position(self, annotate):
         self.draw()
@@ -157,7 +176,7 @@ class ChartCanvas(FigureCanvas):
 
                 self.data.loc[self.data['Key'] == key, self.x_label] = new_x
                 self.data.loc[self.data['Key'] == key, self.y_label] = new_y
-                self.update_plot()
+                self.update_plot(False)
 
     def on_release(self, event):
         if self.selected_point is not None:
@@ -173,7 +192,7 @@ class ChartCanvas(FigureCanvas):
 
             self.data.loc[self.data['Key'] == key, self.x_label] = new_x
             self.data.loc[self.data['Key'] == key, self.y_label] = new_y
-            self.update_plot()
+            self.update_plot(False)
             self.point_dropped.emit(key, new_x, new_y)
 
             # 업데이트된 data point 의 정보를 상단에 노출
@@ -231,4 +250,4 @@ class ChartCanvas(FigureCanvas):
     @pyqtSlot()
     def reverse_chart(self):
         self.is_reversed = not self.is_reversed
-        self.update_plot()
+        self.update_plot(True)
