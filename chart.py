@@ -250,4 +250,4 @@ class ChartCanvas(FigureCanvas):
     @pyqtSlot()
     def reverse_chart(self):
         self.is_reversed = not self.is_reversed
-        self.update_plot(True)
+        self.update_plot(False)
