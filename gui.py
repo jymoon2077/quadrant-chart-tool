@@ -70,7 +70,7 @@ class MainWindow(QMainWindow):
         # 차트 정보 레이아웃
         self.chartview_layout = QHBoxLayout()
         self.selected_point_label = QLabel('Selected Point: None')
-        self.chartview_layout.addWidget(self.selected_point_label)
+        self.chartview_layout.addWidget(self.selected_point_label, 3)
         h_widget = QWidget()
         h_widget.setLayout(self.chartview_layout)
         h_widget.setFixedHeight(100)
@@ -87,9 +87,16 @@ class MainWindow(QMainWindow):
         self.right_layout.addWidget(self.chart_canvas, 8)
 
         # 차트 정보 레이아웃에 Reverse Chart 버튼 추가
-        self.reverse_chart_button = QPushButton('Reverse Chart')
-        self.reverse_chart_button.clicked.connect(self.chart_canvas.reverse_chart)
-        self.chartview_layout.addWidget(self.reverse_chart_button)
+        # self.reverse_chart_button = QPushButton('Reverse Chart')
+        # self.reverse_chart_button.clicked.connect(self.chart_canvas.reverse_chart)
+        # self.chartview_layout.addWidget(self.reverse_chart_button)
+        self.reverse_x_axis_button = QPushButton('Reverse X Axis')
+        self.reverse_x_axis_button.clicked.connect(self.chart_canvas.reverse_x_axis)
+        self.chartview_layout.addWidget(self.reverse_x_axis_button, 1)
+
+        self.reverse_y_axis_button = QPushButton('Reverse Y Axis')
+        self.reverse_y_axis_button.clicked.connect(self.chart_canvas.reverse_y_axis)
+        self.chartview_layout.addWidget(self.reverse_y_axis_button, 1)
 
         # QSplitter를 사용하여 레이아웃 나누기
         self.splitter = QSplitter(Qt.Horizontal)

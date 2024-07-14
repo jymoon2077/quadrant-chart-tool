@@ -17,7 +17,9 @@ class ChartCanvas(FigureCanvas):
         self.setParent(parent)
         self.selected_point = None
         self.data = None
-        self.is_reversed = False
+        # self.is_reversed = False
+        self.is_x_reversed = False
+        self.is_y_reversed = False
         self.annotates = []
         self.chart_size_x = 0
         self.chart_size_y = 0
@@ -83,12 +85,22 @@ class ChartCanvas(FigureCanvas):
             # y_max = math.ceil(y_max * 1.1)
 
             # 사분면 X, Y 범위 설정
-            if self.is_reversed:
+            # if self.is_reversed:
+            #     self.axes.set_xlim(x_max, 0)
+            #     self.axes.set_ylim(y_max, 0)
+            # else:
+            #     self.axes.set_xlim(0, x_max)
+            #     self.axes.set_ylim(0, y_max)
+            if self.is_x_reversed:
                 self.axes.set_xlim(x_max, 0)
-                self.axes.set_ylim(y_max, 0)
             else:
                 self.axes.set_xlim(0, x_max)
+
+            if self.is_y_reversed:
+                self.axes.set_ylim(y_max, 0)
+            else:
                 self.axes.set_ylim(0, y_max)
+
 
             self.axes.set_title('Quadrant Chart', color='green')
             self.axes.set_xlabel(self.x_label, color='red')
@@ -144,11 +156,20 @@ class ChartCanvas(FigureCanvas):
                 # new_x = min(max(event.xdata, self.axes.get_xlim()[0]), self.axes.get_xlim()[1])
                 # new_y = min(max(event.ydata, self.axes.get_ylim()[0]), self.axes.get_ylim()[1])
 
-                if self.is_reversed:
+                # if self.is_reversed:
+                #     new_x = max(min(self.axes.get_xlim()[0], event.xdata), self.axes.get_xlim()[1])
+                #     new_y = max(min(self.axes.get_ylim()[0], event.ydata), self.axes.get_ylim()[1])
+                # else:
+                #     new_x = min(max(event.xdata, self.axes.get_xlim()[0]), self.axes.get_xlim()[1])
+                #     new_y = min(max(event.ydata, self.axes.get_ylim()[0]), self.axes.get_ylim()[1])
+                if self.is_x_reversed:
                     new_x = max(min(self.axes.get_xlim()[0], event.xdata), self.axes.get_xlim()[1])
-                    new_y = max(min(self.axes.get_ylim()[0], event.ydata), self.axes.get_ylim()[1])
                 else:
                     new_x = min(max(event.xdata, self.axes.get_xlim()[0]), self.axes.get_xlim()[1])
+
+                if self.is_y_reversed:
+                    new_y = max(min(self.axes.get_ylim()[0], event.ydata), self.axes.get_ylim()[1])
+                else:
                     new_y = min(max(event.ydata, self.axes.get_ylim()[0]), self.axes.get_ylim()[1])
 
                 self.data.loc[self.data['Key'] == key, self.x_label] = new_x
@@ -162,10 +183,15 @@ class ChartCanvas(FigureCanvas):
             new_x = round(event.xdata, 1)
             new_y = round(event.ydata, 1)
 
-            if self.is_reversed:
-                new_x = max(min(self.axes.get_xlim()[0], new_x), self.axes.get_xlim()[1])
-                new_y = max(min(self.axes.get_ylim()[0], new_y), self.axes.get_ylim()[1])
+            # if self.is_reversed:
+            #     new_x = max(min(self.axes.get_xlim()[0], new_x), self.axes.get_xlim()[1])
+            #     new_y = max(min(self.axes.get_ylim()[0], new_y), self.axes.get_ylim()[1])
 
+            if self.is_x_reversed:
+                new_x = max(min(self.axes.get_xlim()[0], new_x), self.axes.get_xlim()[1])
+
+            if self.is_y_reversed:
+                new_y = max(min(self.axes.get_ylim()[0], new_y), self.axes.get_ylim()[1])
 
             self.data.loc[self.data['Key'] == key, self.x_label] = new_x
             self.data.loc[self.data['Key'] == key, self.y_label] = new_y
@@ -182,4 +208,12 @@ class ChartCanvas(FigureCanvas):
     @pyqtSlot()
     def reverse_chart(self):
         self.is_reversed = not self.is_reversed
+        self.update_plot(False)
+
+    def reverse_x_axis(self):
+        self.is_x_reversed = not self.is_x_reversed
+        self.update_plot(False)
+
+    def reverse_y_axis(self):
+        self.is_y_reversed = not self.is_y_reversed
         self.update_plot(False)
