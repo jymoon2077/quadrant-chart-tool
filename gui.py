@@ -111,24 +111,33 @@ class MainWindow(QMainWindow):
         self.splitter.setSizes([self.size().width() // 2, self.size().width() // 2])
         self.main_layout.addWidget(self.splitter)
 
+        # 테이블 값 변경 시 차트 갱신
+        self.table_widget.itemChanged.connect(self.on_item_changed)
+
+
     # def resizeEvent(self, event):
     #     super().resizeEvent(event)
     #     # 윈도우가 리사이즈 될 때 차트 캔버스를 정사각형으로 유지
     #     self.chart_canvas.setFixedSize(self.splitter.sizes()[1], self.splitter.sizes()[1])
 
     def load_data(self):
+
         file_path, _ = QFileDialog.getOpenFileName(self, 'Open File', '', 'Excel Files (*.xlsx)')
         if file_path:
+            self.table_widget.itemChanged.disconnect()  # 신호 연결 해제
             self.data_handler.load_data(file_path)
             self.display_data()
             self.populate_combo_boxes()
+            self.table_widget.itemChanged.connect(self.on_item_changed)  # 신호 다시 연결
 
     def plot_chart(self):
 
         # 현재 테이블에 노출되는 데이터를 업데이트하여 저장한다
         if self.get_table_data() is not None:
+            self.table_widget.itemChanged.disconnect()  # 신호 연결 해제
             self.update_data_from_gui()
             self.reset_table_style()
+            self.table_widget.itemChanged.connect(self.on_item_changed)  # 신호 다시 연결
 
         # X, Y축 선택 여부를 체크하고 축 정보를 저장한다
         if self.check_axes_selection() is False:
@@ -275,8 +284,12 @@ class MainWindow(QMainWindow):
 
     @pyqtSlot(str, float, float)
     def handle_point_drop(self, key, x, y):
+        self.table_widget.itemChanged.disconnect()  # 신호 연결 해제
+
         print(f"Point dropped: Key={key}, X={x}, Y={y}")
         self.update_row_by_key(key, x, y)
+
+        self.table_widget.itemChanged.connect(self.on_item_changed)  # 신호 다시 연결
 
     def update_row_by_key(self, key_to_update, new_x_value, new_y_value):
         print("update_row_by_key")
@@ -323,6 +336,8 @@ class MainWindow(QMainWindow):
         print(data)
         print("========================== update_data =============================")
 
+        # self.table_widget.itemChanged.disconnect()
+
         # 이 부분에 수식을 계산해서 숫자로 변환하는 코드 추가
         for i in range(data.shape[0]):
             for j in range(data.shape[1]):
@@ -337,6 +352,8 @@ class MainWindow(QMainWindow):
                     if cell_value is None:
                         cell_value = ''  # None을 빈 문자열로 대체
                     data.iat[i, j] = cell_value
+
+        # self.table_widget.itemChanged.connect(self.on_item_changed)
 
     def get_table_data(self):
         print("get_table_data!")
@@ -375,3 +392,45 @@ class MainWindow(QMainWindow):
                     item.setBackground(default_background)
                     item.setForeground(default_foreground)
                     item.setFont(default_font)
+
+    def on_item_changed(self, item):
+        row = item.row()
+        column = item.column()
+
+        QMessageBox.information(self, 'Oh', 'Table Item Changed.')
+
+        # 현재 테이블에 노출되는 데이터를 업데이트하여 저장한다
+        # if self.get_table_data() is not None:
+        #     self.update_data_from_gui()
+        #     #self.reset_table_style()
+        #
+        # # X, Y축 선택 여부를 체크하고 축 정보를 저장한다
+        # if self.check_axes_selection() is False:
+        #     return
+        #
+        # # GUI 테이블로부터 데이터 가져와서 차트 그리기
+        # chart_data = self.get_table_data()[[self.x_column, self.y_column, 'Key', 'Summary']]
+        # if chart_data is not None:
+        #     print("================== chart data =======================")
+        #     print(chart_data)
+        #     print("================== chart data =======================")
+        #     self.chart_canvas.plot(chart_data, self.x_column, self.y_column)
+
+        # 변경된 값을 데이터프레임에 반영
+        # data = self.data_handler.get_data()
+        # new_value = item.text()
+        # data.iat[row, column] = new_value
+        #
+        # # 컬럼 정보에 수식이 포함되어 있다면, 수식 계산 후 업데이트
+        # column_info = self.data_handler.get_column_info()
+        # true_formula_indices = [index for index, details in column_info.items() if details['is_formula']]
+        #
+        # if column in true_formula_indices:
+        #     self.update_data_from_gui()
+        # else:
+        #     # 수식이 없는 경우, 변경된 값만 반영
+        #     data.iat[row, column] = new_value
+        #
+        # X, Y축이 선택되어 있다면 차트를 업데이트
+        if self.x_column and self.y_column:
+            self.plot_chart()
