@@ -4,19 +4,22 @@ from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt
 from PyQt5.QtWidgets import QTableWidgetItem
 import numpy as np
 import pandas as pd
-import random
+
 
 class ChartCanvas(FigureCanvas):
     point_selected = pyqtSignal(dict)
     point_dropped = pyqtSignal(str, float, float)
 
     def __init__(self, parent=None):
+
         fig = Figure()
         self.axes = fig.add_subplot(111)
         super().__init__(fig)
         self.setParent(parent)
         self.selected_point = None
         self.data = None
+        self.y_label = None
+        self.x_label = None
         # self.is_reversed = False
         self.is_x_reversed = False
         self.is_y_reversed = False
@@ -67,10 +70,6 @@ class ChartCanvas(FigureCanvas):
             self.axes.fill_between([0, x_mid], 0, y_mid, color='green', alpha=0.1)
             self.axes.fill_between([x_mid, x_max], 0, y_mid, color='yellow', alpha=0.1)
 
-            print("===================== update plot ========================")
-            print(self.data)
-            print("===================== update plot ========================")
-
             colors = self.data['Color'].tolist()
             self.scatter = self.axes.scatter(x_data, y_data, c=colors, picker=True)
 
@@ -106,10 +105,6 @@ class ChartCanvas(FigureCanvas):
 
             self.chart_size_x = x_data.max()
             self.chart_size_y = y_data.max()
-
-    def random_color(self):
-        r = lambda: random.randint(0, 255)
-        return f'#{r():02x}{r():02x}{r():02x}'
 
     def on_click(self, event):
         if event.inaxes != self.axes:
