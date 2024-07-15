@@ -1,3 +1,5 @@
+import random
+
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel, QHBoxLayout, QPushButton, \
     QTableWidget, QTableWidgetItem, QFileDialog, QComboBox, QSplitter, QMessageBox, QHeaderView
 from PyQt5.QtCore import Qt, pyqtSlot
@@ -23,6 +25,7 @@ class MainWindow(QMainWindow):
 
         self.data_handler = DataHandler()
         self.column_info = self.data_handler.get_column_info()
+        self.colors = []
 
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
@@ -114,7 +117,6 @@ class MainWindow(QMainWindow):
         # 테이블 값 변경 시 차트 갱신
         self.table_widget.itemChanged.connect(self.on_item_changed)
 
-
     # def resizeEvent(self, event):
     #     super().resizeEvent(event)
     #     # 윈도우가 리사이즈 될 때 차트 캔버스를 정사각형으로 유지
@@ -128,6 +130,7 @@ class MainWindow(QMainWindow):
             self.data_handler.load_data(file_path)
             self.display_data()
             self.populate_combo_boxes()
+            self.generate_colors()
             self.table_widget.itemChanged.connect(self.on_item_changed)  # 신호 다시 연결
 
     def plot_chart(self):
@@ -149,7 +152,7 @@ class MainWindow(QMainWindow):
             print("================== chart data =======================")
             print(chart_data)
             print("================== chart data =======================")
-            self.chart_canvas.plot(chart_data, self.x_column, self.y_column)
+            self.chart_canvas.plot(chart_data, self.x_column, self.y_column, self.colors)
 
     def save_changes(self):
         file_path, _ = QFileDialog.getSaveFileName(self, 'Save File', '', 'Excel Files (*.xlsx)')
@@ -401,3 +404,13 @@ class MainWindow(QMainWindow):
         # X, Y축이 선택되어 있다면 차트를 업데이트
         if self.x_column and self.y_column:
             self.plot_chart()
+
+    def generate_colors(self):
+        print("generate_colors")
+        if self.data_handler is not None:
+            print("generate random color!")
+            self.colors = [self.random_color() for _ in range(self.data_handler.get_data().shape[0])]
+
+    def random_color(self):
+        r = lambda: random.randint(0, 255)
+        return f'#{r():02x}{r():02x}{r():02x}'

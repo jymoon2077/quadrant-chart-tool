@@ -28,15 +28,16 @@ class ChartCanvas(FigureCanvas):
         self.cidmotion = self.mpl_connect('motion_notify_event', self.on_motion)
         self.cidrelease = self.mpl_connect('button_release_event', self.on_release)
 
-    @pyqtSlot(pd.DataFrame, str, str)
-    def plot(self, data, x_label, y_label):
+    @pyqtSlot(pd.DataFrame, str, str, list)
+    def plot(self, data, x_label, y_label, colors):
         print("plot")
         self.data = data
         self.x_label = x_label
         self.y_label = y_label
 
         if 'Color' not in self.data.columns:
-            self.data['Color'] = [self.random_color() for _ in range(len(self.data))]
+            # self.data['Color'] = [self.random_color() for _ in range(len(self.data))]
+            self.data['Color'] = colors
 
         self.update_plot(True)
 
