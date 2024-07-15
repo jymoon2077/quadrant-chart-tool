@@ -265,8 +265,19 @@ class MainWindow(QMainWindow):
             formula = formula.replace(var, str(value))
 
         # 계산 수행
-        result = eval(formula)
-        rounded_result = round(result, 1)
+        # result = eval(formula)
+        # rounded_result = round(result, 1)
+        try:
+            # 계산 수행
+            result = eval(formula)
+            rounded_result = round(result, 1)
+        except ZeroDivisionError:
+            print("Error: Division by zero")
+            rounded_result = 0
+        except Exception as e:
+            print(f"Error: {e}")
+            rounded_result = 0
+
         # 결과 출력
         print(f"계산 결과: {rounded_result}")
         return rounded_result
