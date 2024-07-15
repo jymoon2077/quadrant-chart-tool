@@ -56,10 +56,6 @@ class ChartCanvas(FigureCanvas):
             x_max, y_max = self.chart_size_x, self.chart_size_y
             x_mid, y_mid = x_max / 2, y_max / 2
 
-            # X축과 Y축의 범위를 데이터의 최대 값에 맞추어 설정 - 스펙 확인 필요
-            # x_max = math.ceil(x_max * 1.1)
-            # y_max = math.ceil(y_max * 1.1)
-
             # 사분면 선 그리기
             self.axes.axhline(y=y_mid, color='black', linestyle='--')
             self.axes.axvline(x=x_mid, color='black', linestyle='--')
@@ -70,27 +66,21 @@ class ChartCanvas(FigureCanvas):
             self.axes.fill_between([0, x_mid], 0, y_mid, color='green', alpha=0.1)
             self.axes.fill_between([x_mid, x_max], 0, y_mid, color='yellow', alpha=0.1)
 
+            print("===================== update plot ========================")
+            print(self.data)
+            print("===================== update plot ========================")
+
             colors = self.data['Color'].tolist()
             self.scatter = self.axes.scatter(x_data, y_data, c=colors, picker=True)
 
             # 차트 데이터 생성
             for i, key in enumerate(self.data['Key']):
+                color = self.data['Color'].iloc[i]
                 annotate = self.axes.annotate(key, (x_data.iloc[i], y_data.iloc[i]),
-                                              bbox=dict(facecolor=colors[i], alpha=0.5))
+                                              bbox=dict(facecolor=color, alpha=0.5))
                 self.annotates.append(annotate)
 
-
-            # # X축과 Y축의 범위를 데이터의 최대 값에 맞추어 설정
-            # x_max = math.ceil(x_max * 1.1)
-            # y_max = math.ceil(y_max * 1.1)
-
             # 사분면 X, Y 범위 설정
-            # if self.is_reversed:
-            #     self.axes.set_xlim(x_max, 0)
-            #     self.axes.set_ylim(y_max, 0)
-            # else:
-            #     self.axes.set_xlim(0, x_max)
-            #     self.axes.set_ylim(0, y_max)
             if self.is_x_reversed:
                 self.axes.set_xlim(x_max, 0)
             else:
@@ -100,7 +90,6 @@ class ChartCanvas(FigureCanvas):
                 self.axes.set_ylim(y_max, 0)
             else:
                 self.axes.set_ylim(0, y_max)
-
 
             self.axes.set_title('Quadrant Chart', color='green')
             self.axes.set_xlabel(self.x_label, color='red')
@@ -153,15 +142,7 @@ class ChartCanvas(FigureCanvas):
             # Update the data frame with new coordinates
             if event.xdata is not None and event.ydata is not None:
                 key = self.selected_point['Key']
-                # new_x = min(max(event.xdata, self.axes.get_xlim()[0]), self.axes.get_xlim()[1])
-                # new_y = min(max(event.ydata, self.axes.get_ylim()[0]), self.axes.get_ylim()[1])
 
-                # if self.is_reversed:
-                #     new_x = max(min(self.axes.get_xlim()[0], event.xdata), self.axes.get_xlim()[1])
-                #     new_y = max(min(self.axes.get_ylim()[0], event.ydata), self.axes.get_ylim()[1])
-                # else:
-                #     new_x = min(max(event.xdata, self.axes.get_xlim()[0]), self.axes.get_xlim()[1])
-                #     new_y = min(max(event.ydata, self.axes.get_ylim()[0]), self.axes.get_ylim()[1])
                 if self.is_x_reversed:
                     new_x = max(min(self.axes.get_xlim()[0], event.xdata), self.axes.get_xlim()[1])
                 else:
@@ -182,10 +163,6 @@ class ChartCanvas(FigureCanvas):
             key = self.selected_point['Key']
             new_x = round(event.xdata, 1)
             new_y = round(event.ydata, 1)
-
-            # if self.is_reversed:
-            #     new_x = max(min(self.axes.get_xlim()[0], new_x), self.axes.get_xlim()[1])
-            #     new_y = max(min(self.axes.get_ylim()[0], new_y), self.axes.get_ylim()[1])
 
             if self.is_x_reversed:
                 new_x = max(min(self.axes.get_xlim()[0], new_x), self.axes.get_xlim()[1])

@@ -264,9 +264,6 @@ class MainWindow(QMainWindow):
         for var, value in variables.items():
             formula = formula.replace(var, str(value))
 
-        # 계산 수행
-        # result = eval(formula)
-        # rounded_result = round(result, 1)
         try:
             # 계산 수행
             result = eval(formula)
@@ -288,8 +285,8 @@ class MainWindow(QMainWindow):
             f"<b>Selected Point:</b><br>"
             f"<b>Key:</b> {point['Key']}<br>"
             f"<b>Summary:</b> {point['Summary']}<br>"
-            f"<b>X:</b> {point['x']}<br>"
-            f"<b>Y:</b> {point['y']}<br>"
+            f"<b>X ({self.x_column}):</b> {point['x']}<br>"
+            f"<b>Y ({self.y_column}):</b> {point['y']}<br>"
         )
         self.selected_point_label.setText(info)
 
@@ -347,8 +344,6 @@ class MainWindow(QMainWindow):
         print(data)
         print("========================== update_data =============================")
 
-        # self.table_widget.itemChanged.disconnect()
-
         # 이 부분에 수식을 계산해서 숫자로 변환하는 코드 추가
         for i in range(data.shape[0]):
             for j in range(data.shape[1]):
@@ -363,8 +358,6 @@ class MainWindow(QMainWindow):
                     if cell_value is None:
                         cell_value = ''  # None을 빈 문자열로 대체
                     data.iat[i, j] = cell_value
-
-        # self.table_widget.itemChanged.connect(self.on_item_changed)
 
     def get_table_data(self):
         print("get_table_data!")
@@ -405,43 +398,6 @@ class MainWindow(QMainWindow):
                     item.setFont(default_font)
 
     def on_item_changed(self, item):
-        row = item.row()
-        column = item.column()
-
-        QMessageBox.information(self, 'Oh', 'Table Item Changed.')
-
-        # 현재 테이블에 노출되는 데이터를 업데이트하여 저장한다
-        # if self.get_table_data() is not None:
-        #     self.update_data_from_gui()
-        #     #self.reset_table_style()
-        #
-        # # X, Y축 선택 여부를 체크하고 축 정보를 저장한다
-        # if self.check_axes_selection() is False:
-        #     return
-        #
-        # # GUI 테이블로부터 데이터 가져와서 차트 그리기
-        # chart_data = self.get_table_data()[[self.x_column, self.y_column, 'Key', 'Summary']]
-        # if chart_data is not None:
-        #     print("================== chart data =======================")
-        #     print(chart_data)
-        #     print("================== chart data =======================")
-        #     self.chart_canvas.plot(chart_data, self.x_column, self.y_column)
-
-        # 변경된 값을 데이터프레임에 반영
-        # data = self.data_handler.get_data()
-        # new_value = item.text()
-        # data.iat[row, column] = new_value
-        #
-        # # 컬럼 정보에 수식이 포함되어 있다면, 수식 계산 후 업데이트
-        # column_info = self.data_handler.get_column_info()
-        # true_formula_indices = [index for index, details in column_info.items() if details['is_formula']]
-        #
-        # if column in true_formula_indices:
-        #     self.update_data_from_gui()
-        # else:
-        #     # 수식이 없는 경우, 변경된 값만 반영
-        #     data.iat[row, column] = new_value
-        #
         # X, Y축이 선택되어 있다면 차트를 업데이트
         if self.x_column and self.y_column:
             self.plot_chart()
