@@ -37,6 +37,8 @@ class ChartCanvas(FigureCanvas):
         self.press = None
         self.x_mid = None  # 초기화
         self.y_mid = None  # 초기화
+        self.prev_mouse_x = None
+        self.prev_mouse_y = None
 
         self.cid = self.mpl_connect('button_press_event', self.on_click)
         self.cidmotion = self.mpl_connect('motion_notify_event', self.on_motion)
@@ -162,6 +164,8 @@ class ChartCanvas(FigureCanvas):
                 self.dragging_line = self.vline
                 self.press = self.vline.get_xdata()
 
+            self.prev_mouse_x, self.prev_mouse_y = event.xdata, event.ydata
+
         for annotate in self.annotates:
             contains, attr = annotate.contains(event)
             if contains:
@@ -222,6 +226,12 @@ class ChartCanvas(FigureCanvas):
     def on_release(self, event):
         if self.selected_point is not None:
             print("on_release")
+
+            # 마우스 커서가 전혀 움직이지 않았다면
+            if self.prev_mouse_x == event.xdata and self.prev_mouse_y == event.ydata:
+                self.selected_point = None
+                return
+
             key = self.selected_point['Key']
             new_x = round(event.xdata, 1)
             new_y = round(event.ydata, 1)
