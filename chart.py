@@ -40,10 +40,13 @@ class ChartCanvas(FigureCanvas):
         self.cidmotion = self.mpl_connect('motion_notify_event', self.on_motion)
         self.cidrelease = self.mpl_connect('button_release_event', self.on_release)
 
-    def initialize(self):
-        self.data = None
-        self.x_mid = None
-        self.y_mid = None
+    def initialize(self, is_switch):
+        if is_switch is True:
+            self.x_mid, self.y_mid = self.y_mid, self.x_mid
+        else:
+            self.data = None
+            self.x_mid = None
+            self.y_mid = None
 
     @pyqtSlot(pd.DataFrame, str, str, list)
     def plot(self, data, x_label, y_label, colors):

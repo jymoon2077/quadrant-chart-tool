@@ -133,7 +133,7 @@ class MainWindow(QMainWindow):
             self.display_data()
             self.populate_combo_boxes()
             self.generate_colors()
-            self.chart_canvas.initialize()
+            self.chart_canvas.initialize(is_switch=False)
             self.table_widget.itemChanged.connect(self.on_item_changed)  # 신호 다시 연결
 
     def plot_chart(self):
@@ -181,6 +181,8 @@ class MainWindow(QMainWindow):
 
         self.x_combo_box.setCurrentText(current_y)
         self.y_combo_box.setCurrentText(current_x)
+
+        self.chart_canvas.initialize(is_switch=True)
 
     def check_axes_selection(self):
         self.x_column = self.x_combo_box.currentText()
