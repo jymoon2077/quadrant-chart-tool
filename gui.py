@@ -412,21 +412,15 @@ class MainWindow(QMainWindow):
                 item = self.table_widget.item(self.previous_selected_row, col)
                 if item.background().color() != QColor(Qt.yellow):
                     item.setBackground(QColor(Qt.white))
-        #         font = item.font()
-        #         font.setBold(False)
-        #         item.setFont(font)
 
         # 현재 선택된 행을 강조
         for col in range(self.table_widget.columnCount()):
             print(f"for range is {self.table_widget.columnCount()}")
-            self.table_widget.item(row, col).setBackground(Qt.green)
-            #self.table_widget.item(0, 0).setText("Bomb!!")
-            #self.table_widget.item(0, 0).setBackground(QColor("yellow"))
-            # item.setBackground(Qt.green)
-            # font = item.font()
-            # font.setBold(True)
-            # item.setFont(font)
-        #
+            item = self.table_widget.item(row, col)
+            if item.background().color() != QColor(Qt.yellow):
+                item.setBackground(Qt.green)
+            # self.table_widget.item(row, col).setBackground(Qt.green)
+
         self.previous_selected_row = row
 
         self.table_widget.itemChanged.connect(self.on_item_changed)  # 신호 다시 연결
