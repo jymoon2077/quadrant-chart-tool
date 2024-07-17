@@ -1,3 +1,5 @@
+from matplotlib import lines
+from matplotlib.backend_bases import MouseButton
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt
@@ -27,10 +29,21 @@ class ChartCanvas(FigureCanvas):
         self.annotates = []
         self.chart_size_x = 0
         self.chart_size_y = 0
+        self.hline = None
+        self.vline = None
+        self.dragging_line = None
+        self.press = None
+        self.x_mid = None  # 초기화
+        self.y_mid = None  # 초기화
 
         self.cid = self.mpl_connect('button_press_event', self.on_click)
         self.cidmotion = self.mpl_connect('motion_notify_event', self.on_motion)
         self.cidrelease = self.mpl_connect('button_release_event', self.on_release)
+
+    def initialize(self):
+        self.data = None
+        self.x_mid = None
+        self.y_mid = None
 
     @pyqtSlot(pd.DataFrame, str, str, list)
     def plot(self, data, x_label, y_label, colors):
@@ -59,17 +72,27 @@ class ChartCanvas(FigureCanvas):
 
             # 사분면 크기 설정
             x_max, y_max = self.chart_size_x, self.chart_size_y
-            x_mid, y_mid = x_max / 2, y_max / 2
+            # x_mid, y_mid = x_max / 2, y_max / 2
+            if self.x_mid is None or self.y_mid is None:
+                print("line /2")
+                self.x_mid = x_max / 2
+                self.y_mid = y_max / 2
 
             # 사분면 선 그리기
-            self.axes.axhline(y=y_mid, color='black', linestyle='--')
-            self.axes.axvline(x=x_mid, color='black', linestyle='--')
+            # self.axes.axhline(y=y_mid, color='black', linestyle='--')
+            # self.axes.axvline(x=x_mid, color='black', linestyle='--')
 
-            # 사분면 배경 그리기
-            self.axes.fill_between([0, x_mid], y_mid, y_max, color='red', alpha=0.1)
-            self.axes.fill_between([x_mid, x_max], y_mid, y_max, color='blue', alpha=0.1)
-            self.axes.fill_between([0, x_mid], 0, y_mid, color='green', alpha=0.1)
-            self.axes.fill_between([x_mid, x_max], 0, y_mid, color='yellow', alpha=0.1)
+            self.hline = lines.Line2D([0, x_max], [self.y_mid, self.y_mid], color='black', linestyle='--')
+            self.vline = lines.Line2D([self.x_mid, self.x_mid], [0, y_max], color='black', linestyle='--')
+
+            self.axes.add_line(self.hline)
+            self.axes.add_line(self.vline)
+
+            # # 사분면 배경 그리기
+            # self.axes.fill_between([0, x_mid], y_mid, y_max, color='red', alpha=0.1)
+            # self.axes.fill_between([x_mid, x_max], y_mid, y_max, color='blue', alpha=0.1)
+            # self.axes.fill_between([0, x_mid], 0, y_mid, color='green', alpha=0.1)
+            # self.axes.fill_between([x_mid, x_max], 0, y_mid, color='yellow', alpha=0.1)
 
             colors = self.data['Color'].tolist()
             self.scatter = self.axes.scatter(x_data, y_data, c=colors, picker=True)
@@ -113,6 +136,16 @@ class ChartCanvas(FigureCanvas):
 
         print("on_click!")
 
+        if event.button == MouseButton.LEFT:
+            contains, _ = self.hline.contains(event)
+            if contains:
+                self.dragging_line = self.hline
+                self.press = self.hline.get_ydata()
+            contains, _ = self.vline.contains(event)
+            if contains:
+                self.dragging_line = self.vline
+                self.press = self.vline.get_xdata()
+
         for annotate in self.annotates:
             contains, attr = annotate.contains(event)
             if contains:
@@ -135,6 +168,9 @@ class ChartCanvas(FigureCanvas):
         self.figure.canvas.blit(self.axes.bbox)
 
     def on_motion(self, event):
+        if event.inaxes != self.axes:
+            return
+
         if self.selected_point is not None:
             print("on_motion")
             # Update the data frame with new coordinates
@@ -154,6 +190,18 @@ class ChartCanvas(FigureCanvas):
                 self.data.loc[self.data['Key'] == key, self.x_label] = new_x
                 self.data.loc[self.data['Key'] == key, self.y_label] = new_y
                 self.update_plot(False)
+
+        if self.dragging_line is None:
+            return
+
+        if self.dragging_line == self.hline:
+            y0 = event.ydata
+            self.hline.set_ydata([y0, y0])
+        elif self.dragging_line == self.vline:
+            x0 = event.xdata
+            self.vline.set_xdata([x0, x0])
+
+        self.figure.canvas.draw()
 
     def on_release(self, event):
         if self.selected_point is not None:
@@ -179,6 +227,21 @@ class ChartCanvas(FigureCanvas):
             self.point_selected.emit(self.selected_point)
 
             self.selected_point = None
+
+        if event.button == MouseButton.LEFT:
+            # self.x_mid = event.xdata
+            # self.y_mid = event.ydata
+
+            if self.dragging_line == self.vline:
+                self.x_mid = event.xdata
+                print(f"Vertical line dropped at x = {self.x_mid}")
+
+            elif self.dragging_line == self.hline:
+                self.y_mid = event.ydata
+                print(f"Horizontal line dropped at y = {self.y_mid}")
+
+            self.dragging_line = None
+            self.press = None
 
     @pyqtSlot()
     def reverse_chart(self):

@@ -133,6 +133,7 @@ class MainWindow(QMainWindow):
             self.display_data()
             self.populate_combo_boxes()
             self.generate_colors()
+            self.chart_canvas.initialize()
             self.table_widget.itemChanged.connect(self.on_item_changed)  # 신호 다시 연결
 
     def plot_chart(self):
