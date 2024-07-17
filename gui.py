@@ -1,7 +1,7 @@
 import random
 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel, QHBoxLayout, QPushButton, \
-    QTableWidget, QTableWidgetItem, QFileDialog, QComboBox, QSplitter, QMessageBox, QHeaderView
+    QTableWidget, QTableWidgetItem, QFileDialog, QComboBox, QSplitter, QMessageBox, QHeaderView, QAbstractItemView
 from PyQt5.QtCore import Qt, pyqtSlot
 from PyQt5.QtGui import QFont, QColor
 from chart import ChartCanvas
@@ -420,6 +420,9 @@ class MainWindow(QMainWindow):
             if item.background().color() != QColor(Qt.yellow):
                 item.setBackground(Qt.green)
             # self.table_widget.item(row, col).setBackground(Qt.green)
+
+        # 선택된 행이 보이도록 스크롤
+        self.table_widget.scrollToItem(self.table_widget.item(row, 0), QAbstractItemView.PositionAtCenter)
 
         self.previous_selected_row = row
 
