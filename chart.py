@@ -1,3 +1,5 @@
+import math
+
 from matplotlib import lines
 from matplotlib.backend_bases import MouseButton
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -40,8 +42,8 @@ class ChartCanvas(FigureCanvas):
         self.cidmotion = self.mpl_connect('motion_notify_event', self.on_motion)
         self.cidrelease = self.mpl_connect('button_release_event', self.on_release)
 
-    def initialize(self, is_switch):
-        if is_switch is True:
+    def initialize(self, is_swap):
+        if is_swap is True:
             self.x_mid, self.y_mid = self.y_mid, self.x_mid
         else:
             self.data = None
@@ -66,6 +68,8 @@ class ChartCanvas(FigureCanvas):
         self.axes.clear()
         self.annotates = []
 
+        print(f"before -> x_mid: {self.x_mid}, y_mid: {self.y_mid}")
+
         if force_redraw is True:
             self.get_chart_max_size()
 
@@ -80,6 +84,15 @@ class ChartCanvas(FigureCanvas):
                 print("line /2")
                 self.x_mid = x_max / 2
                 self.y_mid = y_max / 2
+
+            if self.x_mid >= x_max:
+                t = x_max * 0.99
+                self.x_mid = math.floor(t * 10) / 10
+            if self.y_mid >= y_max:
+                t = y_max * 0.99
+                self.y_mid = math.floor(t * 10) / 10
+
+            print(f"after -> x_mid: {self.x_mid}, y_mid: {self.y_mid}")
 
             # 사분면 선 그리기
             # self.axes.axhline(y=y_mid, color='black', linestyle='--')

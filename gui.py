@@ -50,9 +50,9 @@ class MainWindow(QMainWindow):
         self.y_combo_box.setPlaceholderText('Select Y axis')
         self.button_layout.addWidget(self.y_combo_box)
 
-        self.switch_axes_button = QPushButton('Switch Axes')
-        self.switch_axes_button.clicked.connect(self.switch_axes)
-        self.button_layout.addWidget(self.switch_axes_button)
+        self.swap_axes_button = QPushButton('Swap Axes')
+        self.swap_axes_button.clicked.connect(self.swap_axes)
+        self.button_layout.addWidget(self.swap_axes_button)
 
         self.plot_button = QPushButton('Plot Chart')
         self.plot_button.clicked.connect(self.plot_chart)
@@ -133,7 +133,7 @@ class MainWindow(QMainWindow):
             self.display_data()
             self.populate_combo_boxes()
             self.generate_colors()
-            self.chart_canvas.initialize(is_switch=False)
+            self.chart_canvas.initialize(is_swap=False)
             self.table_widget.itemChanged.connect(self.on_item_changed)  # 신호 다시 연결
 
     def plot_chart(self):
@@ -175,14 +175,14 @@ class MainWindow(QMainWindow):
         self.x_combo_box.addItems(filtered_columns)
         self.y_combo_box.addItems(filtered_columns)
 
-    def switch_axes(self):
+    def swap_axes(self):
         current_x = self.x_combo_box.currentText()
         current_y = self.y_combo_box.currentText()
 
         self.x_combo_box.setCurrentText(current_y)
         self.y_combo_box.setCurrentText(current_x)
 
-        self.chart_canvas.initialize(is_switch=True)
+        self.chart_canvas.initialize(is_swap=True)
 
     def check_axes_selection(self):
         self.x_column = self.x_combo_box.currentText()
@@ -428,30 +428,6 @@ class MainWindow(QMainWindow):
             # item.setFont(font)
         #
         self.previous_selected_row = row
-
-
-        # 위에서 가져온거 (참고)
-        # for row in range(self.table_widget.rowCount()):
-        #     item = self.table_widget.item(row, 0)
-        #     if item is not None and item.text() == key_to_update:
-        #         print("Key found!")
-        #         print(f"row: {row}, x_column_index: {self.x_column_index}, y_column_index: {self.y_column_index}")
-        #         # 보여지는 테이블 데이터 변경 X
-        #         self.table_widget.item(row, self.x_column_index).setText(str(new_x_value))
-        #         self.table_widget.item(row, self.x_column_index).setBackground(Qt.yellow)
-        #         font = self.table_widget.item(row, self.x_column_index).font()
-        #         font.setItalic(True)
-        #         self.table_widget.item(row, self.x_column_index).setForeground(Qt.darkBlue)
-        #         self.table_widget.item(row, self.x_column_index).setFont(font)
-        #         # 보여지는 테이블 데이터 변경 Y
-        #         self.table_widget.item(row, self.y_column_index).setText(str(new_y_value))
-        #         self.table_widget.item(row, self.y_column_index).setBackground(Qt.yellow)
-        #         font = self.table_widget.item(row, self.y_column_index).font()
-        #         font.setItalic(True)
-        #         self.table_widget.item(row, self.y_column_index).setForeground(Qt.darkBlue)
-        #         self.table_widget.item(row, self.y_column_index).setFont(font)
-        #
-        #         break
 
         self.table_widget.itemChanged.connect(self.on_item_changed)  # 신호 다시 연결
 
