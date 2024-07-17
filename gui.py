@@ -26,6 +26,7 @@ class MainWindow(QMainWindow):
         self.data_handler = DataHandler()
         self.column_info = self.data_handler.get_column_info()
         self.colors = []
+        self.previous_selected_row = -1  # 이전 선택된 행의 인덱스를 추적하는 변수
 
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
@@ -83,6 +84,7 @@ class MainWindow(QMainWindow):
 
         # 차트 캔버스
         self.chart_canvas = ChartCanvas(self)
+        self.chart_canvas.point_clicked.connect(self.highlight_selected_row)  # Signal 연결
         self.chart_canvas.point_selected.connect(self.display_selected_point)  # Signal 연결
         self.chart_canvas.point_dropped.connect(self.handle_point_drop)  # Signal 연결
 
@@ -293,14 +295,7 @@ class MainWindow(QMainWindow):
         )
         self.selected_point_label.setText(info)
 
-    @pyqtSlot(str, float, float)
-    def handle_point_drop(self, key, x, y):
-        self.table_widget.itemChanged.disconnect()  # 신호 연결 해제
 
-        print(f"Point dropped: Key={key}, X={x}, Y={y}")
-        self.update_row_by_key(key, x, y)
-
-        self.table_widget.itemChanged.connect(self.on_item_changed)  # 신호 다시 연결
 
     def update_row_by_key(self, key_to_update, new_x_value, new_y_value):
         print("update_row_by_key")
@@ -386,6 +381,79 @@ class MainWindow(QMainWindow):
 
         return df
 
+    @pyqtSlot(str, float, float)
+    def handle_point_drop(self, key, x, y):
+        print("handle_point_drop")
+        self.table_widget.itemChanged.disconnect()  # 신호 연결 해제
+
+        print(f"Point dropped: Key={key}, X={x}, Y={y}")
+        self.update_row_by_key(key, x, y)
+
+        self.table_widget.itemChanged.connect(self.on_item_changed)  # 신호 다시 연결
+
+    @pyqtSlot(str)
+    def highlight_selected_row(self, key):
+        print("highlight_selected_row")
+        self.table_widget.itemChanged.disconnect()  # 신호 연결 해제
+
+        # key = point['Key']
+        data = self.data_handler.get_data()
+        row = data.index[data['Key'] == key].tolist()[0] - 1
+
+        print(f"row: {row}")
+
+        # 이전 선택된 행이 있고, 그 행이 현재 행과 다르면 원래 상태로 되돌림
+        if self.previous_selected_row != -1 and self.previous_selected_row != row:
+            print("1")
+            for col in range(self.table_widget.columnCount()):
+                item = self.table_widget.item(self.previous_selected_row, col)
+                if item.background().color() != QColor(Qt.yellow):
+                    item.setBackground(QColor(Qt.white))
+        #         font = item.font()
+        #         font.setBold(False)
+        #         item.setFont(font)
+
+        # 현재 선택된 행을 강조
+        for col in range(self.table_widget.columnCount()):
+            print(f"for range is {self.table_widget.columnCount()}")
+            self.table_widget.item(row, col).setBackground(Qt.green)
+            #self.table_widget.item(0, 0).setText("Bomb!!")
+            #self.table_widget.item(0, 0).setBackground(QColor("yellow"))
+            # item.setBackground(Qt.green)
+            # font = item.font()
+            # font.setBold(True)
+            # item.setFont(font)
+        #
+        self.previous_selected_row = row
+
+
+        # 위에서 가져온거 (참고)
+        # for row in range(self.table_widget.rowCount()):
+        #     item = self.table_widget.item(row, 0)
+        #     if item is not None and item.text() == key_to_update:
+        #         print("Key found!")
+        #         print(f"row: {row}, x_column_index: {self.x_column_index}, y_column_index: {self.y_column_index}")
+        #         # 보여지는 테이블 데이터 변경 X
+        #         self.table_widget.item(row, self.x_column_index).setText(str(new_x_value))
+        #         self.table_widget.item(row, self.x_column_index).setBackground(Qt.yellow)
+        #         font = self.table_widget.item(row, self.x_column_index).font()
+        #         font.setItalic(True)
+        #         self.table_widget.item(row, self.x_column_index).setForeground(Qt.darkBlue)
+        #         self.table_widget.item(row, self.x_column_index).setFont(font)
+        #         # 보여지는 테이블 데이터 변경 Y
+        #         self.table_widget.item(row, self.y_column_index).setText(str(new_y_value))
+        #         self.table_widget.item(row, self.y_column_index).setBackground(Qt.yellow)
+        #         font = self.table_widget.item(row, self.y_column_index).font()
+        #         font.setItalic(True)
+        #         self.table_widget.item(row, self.y_column_index).setForeground(Qt.darkBlue)
+        #         self.table_widget.item(row, self.y_column_index).setFont(font)
+        #
+        #         break
+
+        self.table_widget.itemChanged.connect(self.on_item_changed)  # 신호 다시 연결
+
+
+
     def reset_table_style(self):
         # 기본 폰트 및 색상 설정
         default_font = QFont()
@@ -399,6 +467,8 @@ class MainWindow(QMainWindow):
                     item.setBackground(default_background)
                     item.setForeground(default_foreground)
                     item.setFont(default_font)
+
+
 
     def on_item_changed(self, item):
         # X, Y축이 선택되어 있다면 차트를 업데이트

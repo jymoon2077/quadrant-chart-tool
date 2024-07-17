@@ -8,6 +8,7 @@ import pandas as pd
 
 class ChartCanvas(FigureCanvas):
     point_selected = pyqtSignal(dict)
+    point_clicked = pyqtSignal(str)
     point_dropped = pyqtSignal(str, float, float)
 
     def __init__(self, parent=None):
@@ -125,6 +126,7 @@ class ChartCanvas(FigureCanvas):
                         "Summary": self.data.loc[ind, "Summary"]
                     }
                     self.point_selected.emit(self.selected_point)
+                    self.point_clicked.emit(key)
                 break
 
         #
