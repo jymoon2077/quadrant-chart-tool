@@ -431,7 +431,10 @@ class MainWindow(QMainWindow):
         # self.table_widget.scrollToItem(self.table_widget.item(row, 0), QAbstractItemView.PositionAtCenter)
         # 2. MAC에서만 이상 동작
         # self.table_widget.verticalScrollBar().setValue(row)
-        QTimer.singleShot(50, lambda: self.scroll_to_row(row))
+        # 3. 타이머
+        # QTimer.singleShot(50, lambda: self.scroll_to_row(row))
+        # 4. 최초 버전 + 축으로 선택된 컬럼이 보이도록 이동
+        self.table_widget.scrollToItem(self.table_widget.item(row, min(self.x_column_index, self.y_column_index)), QAbstractItemView.PositionAtCenter)
 
         self.previous_selected_row = row
 
