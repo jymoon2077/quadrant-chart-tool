@@ -6,11 +6,13 @@ from PyQt5.QtCore import Qt, pyqtSlot
 from PyQt5.QtGui import QFont, QColor
 from chart import ChartCanvas
 from data_handler import DataHandler
+from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt
 import re
 import pandas as pd
 
 
 class MainWindow(QMainWindow):
+    row_selected = pyqtSignal(int)
     def __init__(self):
         super().__init__()
         self.setWindowTitle('Quadrant Chart Tool')
@@ -118,6 +120,10 @@ class MainWindow(QMainWindow):
 
         # 테이블 값 변경 시 차트 갱신
         self.table_widget.itemChanged.connect(self.on_item_changed)
+
+        # 테이블 row 선택 시
+        self.table_widget.itemSelectionChanged.connect(self.on_selection_changed)
+        self.row_selected.connect(self.chart_canvas.highlight_point)
 
     # def resizeEvent(self, event):
     #     super().resizeEvent(event)
@@ -451,6 +457,14 @@ class MainWindow(QMainWindow):
         # X, Y축이 선택되어 있다면 차트를 업데이트
         if self.x_column and self.y_column:
             self.plot_chart()
+
+    def on_selection_changed(self):
+        selected_items = self.table_widget.selectedItems()
+        if selected_items:
+            row = selected_items[0].row()
+            print(f"on_selection_changed, row : {row}")
+            # QMessageBox.critical(self, 'Error', 'table item selected!')
+            self.row_selected.emit(row)
 
     def generate_colors(self):
         print("generate_colors")

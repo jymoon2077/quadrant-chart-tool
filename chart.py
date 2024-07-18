@@ -1,13 +1,15 @@
 import math
-
+import random
 from matplotlib import lines
 from matplotlib.backend_bases import MouseButton
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt
-from PyQt5.QtWidgets import QTableWidgetItem
+from PyQt5.QtWidgets import QTableWidgetItem, QMessageBox
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 import numpy as np
 import pandas as pd
+import adjustText as aT
 
 
 class ChartCanvas(FigureCanvas):
@@ -39,6 +41,10 @@ class ChartCanvas(FigureCanvas):
         self.y_mid = None  # 초기화
         self.prev_mouse_x = None
         self.prev_mouse_y = None
+
+        # 테스트용 기본 툴바
+        self.toolbar = NavigationToolbar(self, parent)
+        parent.addToolBar(self.toolbar)
 
         self.cid = self.mpl_connect('button_press_event', self.on_click)
         self.cidmotion = self.mpl_connect('motion_notify_event', self.on_motion)
@@ -138,6 +144,7 @@ class ChartCanvas(FigureCanvas):
             self.axes.set_ylabel(self.y_label, color='blue')
 
         self.draw()
+
 
     def get_chart_max_size(self):
         # 차트 사이즈를 현재 데이터 기준으로 갱신해야 할 때 호출
@@ -281,3 +288,24 @@ class ChartCanvas(FigureCanvas):
     def reverse_y_axis(self):
         self.is_y_reversed = not self.is_y_reversed
         self.update_plot(False)
+
+    @pyqtSlot(int)
+    def highlight_point(self, row):
+        print("highlight_point!")
+        key = self.data.iloc[row]['Key']
+        print(f"highlight_point > key: {key}")
+        for i, annotate in enumerate(self.annotates):
+            if annotate.get_text() == key:
+                print(f"highlight_point > for loop: {key}th annotate found!")
+                # QMessageBox.critical(self, 'Error', 'highlight_point <- signal accepted!')
+                self.selected_point = {
+                    "Key": key,
+                    "x": self.data.iloc[i][self.x_label],
+                    "y": self.data.iloc[i][self.y_label],
+                    "Summary": self.data.iloc[i]["Summary"]
+                }
+                self.point_selected.emit(self.selected_point)
+                self.point_clicked.emit(key)
+                break
+
+        self.update_plot(False)  # 주석 강조 업데이트
