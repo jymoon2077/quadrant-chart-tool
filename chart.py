@@ -305,7 +305,7 @@ class ChartCanvas(FigureCanvas):
                 # self.point_selected.emit(self.selected_point)
                 # self.point_clicked.emit(key)
 
-                annotate.set_fontsize(15)  # 글꼴 크기 증가
+                annotate.set_fontsize(19)  # 글꼴 크기 증가
 
             else:
                 annotate.set_fontsize(10)  # 기본 글꼴 크기
