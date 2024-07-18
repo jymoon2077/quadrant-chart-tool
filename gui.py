@@ -1,7 +1,7 @@
 import random
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel, QHBoxLayout, QPushButton, \
     QTableWidget, QTableWidgetItem, QFileDialog, QComboBox, QSplitter, QMessageBox, QHeaderView, QAbstractItemView
-from PyQt5.QtCore import Qt, pyqtSlot
+from PyQt5.QtCore import Qt, pyqtSlot, QTimer
 from PyQt5.QtGui import QFont, QColor
 from chart import ChartCanvas
 from data_handler import DataHandler
@@ -427,14 +427,22 @@ class MainWindow(QMainWindow):
             # self.table_widget.item(row, col).setBackground(Qt.green)
 
         # 선택된 행이 보이도록 스크롤
-        #self.table_widget.scrollToItem(self.table_widget.item(row, 0), QAbstractItemView.PositionAtCenter)
-        self.table_widget.verticalScrollBar().setValue(row)
+        # 1. 최초 버전
+        # self.table_widget.scrollToItem(self.table_widget.item(row, 0), QAbstractItemView.PositionAtCenter)
+        # 2. MAC에서만 이상 동작
+        # self.table_widget.verticalScrollBar().setValue(row)
+        QTimer.singleShot(50, lambda: self.scroll_to_row(row))
 
         self.previous_selected_row = row
 
         self.table_widget.itemChanged.connect(self.on_item_changed)  # 신호 다시 연결
 
-
+    def scroll_to_row(self, row):
+        # 각 행의 높이를 고려하여 스크롤 값을 설정
+        # row_height = self.table_widget.rowHeight(row)
+        # scroll_value = row * row_height
+        # self.table_widget.verticalScrollBar().setValue(scroll_value)
+        self.table_widget.verticalScrollBar().setValue(row)
 
     def reset_table_style(self):
         # 기본 폰트 및 색상 설정
