@@ -307,7 +307,8 @@ class ChartCanvas(FigureCanvas):
 
                 annotate.set_fontsize(15)  # 글꼴 크기 증가
 
-                break
+            else:
+                annotate.set_fontsize(10)  # 기본 글꼴 크기
 
         # self.update_plot(False)  # 주석 강조 업데이트
         self.draw()
