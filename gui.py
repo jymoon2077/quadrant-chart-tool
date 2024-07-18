@@ -422,7 +422,8 @@ class MainWindow(QMainWindow):
             # self.table_widget.item(row, col).setBackground(Qt.green)
 
         # 선택된 행이 보이도록 스크롤
-        self.table_widget.scrollToItem(self.table_widget.item(row, 0), QAbstractItemView.PositionAtCenter)
+        #self.table_widget.scrollToItem(self.table_widget.item(row, 0), QAbstractItemView.PositionAtCenter)
+        self.table_widget.verticalScrollBar().setValue(row)
 
         self.previous_selected_row = row
 
