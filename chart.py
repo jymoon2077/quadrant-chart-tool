@@ -294,16 +294,16 @@ class ChartCanvas(FigureCanvas):
         print(f"highlight_point > key: {key}")
         for i, annotate in enumerate(self.annotates):
             if annotate.get_text() == key:
-                print(f"highlight_point > for loop: {key}th annotate found!")
-                # QMessageBox.critical(self, 'Error', 'highlight_point <- signal accepted!')
-                self.selected_point = {
-                    "Key": key,
-                    "x": self.data.iloc[i][self.x_label],
-                    "y": self.data.iloc[i][self.y_label],
-                    "Summary": self.data.iloc[i]["Summary"]
-                }
-                self.point_selected.emit(self.selected_point)
-                self.point_clicked.emit(key)
+                # print(f"highlight_point > for loop: {key}th annotate found!")
+                # # QMessageBox.critical(self, 'Error', 'highlight_point <- signal accepted!')
+                # self.selected_point = {
+                #     "Key": key,
+                #     "x": self.data.iloc[i][self.x_label],
+                #     "y": self.data.iloc[i][self.y_label],
+                #     "Summary": self.data.iloc[i]["Summary"]
+                # }
+                # self.point_selected.emit(self.selected_point)
+                # self.point_clicked.emit(key)
 
                 annotate.set_fontsize(15)  # 글꼴 크기 증가
 
