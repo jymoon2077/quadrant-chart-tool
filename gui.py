@@ -1,5 +1,4 @@
 import random
-
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel, QHBoxLayout, QPushButton, \
     QTableWidget, QTableWidgetItem, QFileDialog, QComboBox, QSplitter, QMessageBox, QHeaderView, QAbstractItemView
 from PyQt5.QtCore import Qt, pyqtSlot

@@ -9,8 +9,6 @@ from PyQt5.QtWidgets import QTableWidgetItem, QMessageBox
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 import numpy as np
 import pandas as pd
-import adjustText as aT
-
 
 class ChartCanvas(FigureCanvas):
     point_selected = pyqtSignal(dict)
