@@ -1,17 +1,21 @@
 import random
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel, QHBoxLayout, QPushButton, \
-    QTableWidget, QTableWidgetItem, QFileDialog, QComboBox, QSplitter, QMessageBox, QHeaderView, QAbstractItemView
-from PyQt5.QtCore import Qt, pyqtSlot, QTimer
+import re
+
+import pandas as pd
+from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt
 from PyQt5.QtGui import QFont, QColor
+from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLabel, QHBoxLayout, QPushButton, \
+    QTableWidget, QTableWidgetItem, QFileDialog, QComboBox, QSplitter, QMessageBox, QAbstractItemView
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+
 from chart import ChartCanvas
 from data_handler import DataHandler
-from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt
-import re
-import pandas as pd
+from common import debug_print
 
 
 class MainWindow(QMainWindow):
     row_selected = pyqtSignal(int)
+
     def __init__(self):
         super().__init__()
         self.setWindowTitle('Quadrant Chart Tool')
@@ -26,8 +30,8 @@ class MainWindow(QMainWindow):
 
         self.data_handler = DataHandler()
         self.column_info = self.data_handler.get_column_info()
-        self.colors = []
-        self.previous_selected_row = -1  # 이전 선택된 행의 인덱스를 추적하는 변수
+        self.colors = []  # annotation 배경 색상을 선택하고 저장하기 위한 리스트
+        self.previous_selected_row = -1  # 테이블에서 이전 선택된 행의 인덱스를 추적하는 변수
 
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
@@ -51,13 +55,13 @@ class MainWindow(QMainWindow):
         self.y_combo_box.setPlaceholderText('Select Y axis')
         self.button_layout.addWidget(self.y_combo_box)
 
-        self.swap_axes_button = QPushButton('Swap Axes')
-        self.swap_axes_button.clicked.connect(self.swap_axes)
-        self.button_layout.addWidget(self.swap_axes_button)
-
         self.plot_button = QPushButton('Plot Chart')
         self.plot_button.clicked.connect(self.plot_chart)
         self.button_layout.addWidget(self.plot_button)
+
+        self.swap_axes_button = QPushButton('Swap Axes')
+        self.swap_axes_button.clicked.connect(self.swap_axes)
+        self.button_layout.addWidget(self.swap_axes_button)
 
         self.save_button = QPushButton('Save Changes')
         self.save_button.clicked.connect(self.save_changes)
@@ -89,13 +93,14 @@ class MainWindow(QMainWindow):
         self.chart_canvas.point_selected.connect(self.display_selected_point)  # Signal 연결
         self.chart_canvas.point_dropped.connect(self.handle_point_drop)  # Signal 연결
 
+        # 차트 툴바를 오른쪽 레이아웃에 추가
+        self.toolbar = NavigationToolbar(self.chart_canvas, self)
+        self.right_layout.addWidget(self.toolbar)
+
         # 차트 캔버스를 오른쪽 레이아웃의 하단에 추가
         self.right_layout.addWidget(self.chart_canvas, 8)
 
         # 차트 정보 레이아웃에 Reverse Chart 버튼 추가
-        # self.reverse_chart_button = QPushButton('Reverse Chart')
-        # self.reverse_chart_button.clicked.connect(self.chart_canvas.reverse_chart)
-        # self.chartview_layout.addWidget(self.reverse_chart_button)
         self.reverse_x_axis_button = QPushButton('Reverse X Axis')
         self.reverse_x_axis_button.clicked.connect(self.chart_canvas.reverse_x_axis)
         self.chartview_layout.addWidget(self.reverse_x_axis_button, 1)
@@ -117,17 +122,12 @@ class MainWindow(QMainWindow):
         self.splitter.setSizes([self.size().width() // 2, self.size().width() // 2])
         self.main_layout.addWidget(self.splitter)
 
-        # 테이블 값 변경 시 차트 갱신
+        # 테이블에서 직접 값 변경 시 차트 갱신
         self.table_widget.itemChanged.connect(self.on_item_changed)
 
-        # 테이블 row 선택 시
+        # 테이블에서 특정 row 선택 시 차트에서 해당 annotation 크기를 늘려서 표시
         self.table_widget.itemSelectionChanged.connect(self.on_selection_changed)
         self.row_selected.connect(self.chart_canvas.highlight_point)
-
-    # def resizeEvent(self, event):
-    #     super().resizeEvent(event)
-    #     # 윈도우가 리사이즈 될 때 차트 캔버스를 정사각형으로 유지
-    #     self.chart_canvas.setFixedSize(self.splitter.sizes()[1], self.splitter.sizes()[1])
 
     def load_data(self):
 
@@ -157,9 +157,9 @@ class MainWindow(QMainWindow):
         # GUI 테이블로부터 데이터 가져와서 차트 그리기
         chart_data = self.get_table_data()[[self.x_column, self.y_column, 'Key', 'Summary']]
         if chart_data is not None:
-            print("================== chart data =======================")
-            print(chart_data)
-            print("================== chart data =======================")
+            debug_print("================== plot chart > chart data =======================")
+            debug_print(chart_data)
+            debug_print("================== plot chart > chart data =======================")
             self.chart_canvas.plot(chart_data, self.x_column, self.y_column, self.colors)
 
     def save_changes(self):
@@ -222,7 +222,7 @@ class MainWindow(QMainWindow):
             if self.x_column_index != -1 and self.y_column_index != -1:
                 break
 
-        print(f"check_axes_selection -> x_column_index: {self.x_column_index}, y_column_index: {self.y_column_index}")
+        debug_print(f"check_axes_selection -> x_column_index: {self.x_column_index}, y_column_index: {self.y_column_index}")
         return True
 
     def display_data(self):
@@ -236,14 +236,12 @@ class MainWindow(QMainWindow):
         true_formula_indices = [index for index, details in column_info.items() if details['is_formula']]
 
         # 결과 출력
-        print(true_formula_indices)
+        debug_print(true_formula_indices)
 
         # 이 부분에 수식을 계산해서 숫자로 변환하는 코드 추가
         for i in range(data.shape[0]):
             for j in range(data.shape[1]):
-                print(f"i: {i}, j: {j}")
                 if j in true_formula_indices:
-                    print("to calculate for j")
                     calculated_value = self.calculate_formula(i, j)
                     self.table_widget.setItem(i, j, QTableWidgetItem(str(calculated_value)))
                 else:
@@ -254,8 +252,6 @@ class MainWindow(QMainWindow):
         formula = self.column_info[col]['formula']
         formula = formula.lstrip('=')
         formula = re.sub(r'\d+', '', formula)
-
-        print(f"formula: {formula}")
 
         # 변수에 대응하는 값을 저장할 딕셔너리
         variables = {}
@@ -282,14 +278,14 @@ class MainWindow(QMainWindow):
             result = eval(formula)
             rounded_result = round(result, 1)
         except ZeroDivisionError:
-            print("Error: Division by zero")
+            debug_print("Error: Division by zero")
             rounded_result = 0
         except Exception as e:
-            print(f"Error: {e}")
+            debug_print(f"Error: {e}")
             rounded_result = 0
 
         # 결과 출력
-        print(f"계산 결과: {rounded_result}")
+        debug_print(f"수식 계산 결과: {rounded_result}")
         return rounded_result
 
     @pyqtSlot(dict)
@@ -303,16 +299,12 @@ class MainWindow(QMainWindow):
         )
         self.selected_point_label.setText(info)
 
-
-
     def update_row_by_key(self, key_to_update, new_x_value, new_y_value):
-        print("update_row_by_key")
 
         for row in range(self.table_widget.rowCount()):
             item = self.table_widget.item(row, 0)
             if item is not None and item.text() == key_to_update:
-                print("Key found!")
-                print(f"row: {row}, x_column_index: {self.x_column_index}, y_column_index: {self.y_column_index}")
+                debug_print(f"row: {row}, x_column_index: {self.x_column_index}, y_column_index: {self.y_column_index}")
                 # 보여지는 테이블 데이터 변경 X
                 self.table_widget.item(row, self.x_column_index).setText(str(new_x_value))
                 self.table_widget.item(row, self.x_column_index).setBackground(Qt.yellow)
@@ -331,7 +323,7 @@ class MainWindow(QMainWindow):
                 break
 
     def update_data_from_gui(self):
-        print("update_data_from_gui")
+
         # GUI 테이블에서 변경된 값을 DataFrame에 저장
         # 수식이 없는 컬럼은 값을 그대로 저장하고
         # 수식이 있는 컬럼은 저장 없이 계산만 하여 보여준다
@@ -344,29 +336,24 @@ class MainWindow(QMainWindow):
         true_formula_indices = [index for index, details in column_info.items() if details['is_formula']]
 
         # 결과 출력
-        print(true_formula_indices)
-
-        print("========================== update_data =============================")
-        print(data)
-        print("========================== update_data =============================")
+        debug_print("========================== update_data from gui =============================")
+        debug_print(data)
+        debug_print("========================== update_data from gui =============================")
 
         # 이 부분에 수식을 계산해서 숫자로 변환하는 코드 추가
         for i in range(data.shape[0]):
             for j in range(data.shape[1]):
-                print(f"i: {i}, j: {j}")
                 if j in true_formula_indices:
-                    print("to calculate for j")
                     calculated_value = self.calculate_formula(i, j)
                     self.table_widget.setItem(i, j, QTableWidgetItem(str(calculated_value)))
                 else:
-                    print("only save data for j")
                     cell_value = self.table_widget.item(i, j).text()
                     if cell_value is None:
                         cell_value = ''  # None을 빈 문자열로 대체
                     data.iat[i, j] = cell_value
 
     def get_table_data(self):
-        print("get_table_data!")
+
         # 테이블의 값을 기준으로 차트를 그릴 DataFrame 생성
         rows = self.table_widget.rowCount()
         cols = self.table_widget.columnCount()
@@ -381,9 +368,9 @@ class MainWindow(QMainWindow):
                 row_data.append(item.text() if item else '')
             data.append(row_data)
 
-        print("================== table data =======================")
-        print(data)
-        print("================== table data =======================")
+        debug_print("================== get table data =======================")
+        debug_print(data)
+        debug_print("================== get table data =======================")
         df = pd.DataFrame(data, columns=headers)
         df.index = range(1, len(df) + 1)
 
@@ -391,28 +378,23 @@ class MainWindow(QMainWindow):
 
     @pyqtSlot(str, float, float)
     def handle_point_drop(self, key, x, y):
-        print("handle_point_drop")
         self.table_widget.itemChanged.disconnect()  # 신호 연결 해제
 
-        print(f"Point dropped: Key={key}, X={x}, Y={y}")
+        debug_print(f"Point dropped: Key={key}, X={x}, Y={y}")
         self.update_row_by_key(key, x, y)
 
         self.table_widget.itemChanged.connect(self.on_item_changed)  # 신호 다시 연결
 
     @pyqtSlot(str)
     def highlight_selected_row(self, key):
-        print("highlight_selected_row")
         self.table_widget.itemChanged.disconnect()  # 신호 연결 해제
 
         # key = point['Key']
         data = self.data_handler.get_data()
         row = data.index[data['Key'] == key].tolist()[0] - 1
 
-        print(f"row: {row}")
-
         # 이전 선택된 행이 있고, 그 행이 현재 행과 다르면 원래 상태로 되돌림
         if self.previous_selected_row != -1 and self.previous_selected_row != row:
-            print("1")
             for col in range(self.table_widget.columnCount()):
                 item = self.table_widget.item(self.previous_selected_row, col)
                 if item.background().color() != QColor(Qt.yellow):
@@ -420,7 +402,6 @@ class MainWindow(QMainWindow):
 
         # 현재 선택된 행을 강조
         for col in range(self.table_widget.columnCount()):
-            print(f"for range is {self.table_widget.columnCount()}")
             item = self.table_widget.item(row, col)
             if item.background().color() != QColor(Qt.yellow):
                 item.setBackground(Qt.green)
@@ -434,18 +415,19 @@ class MainWindow(QMainWindow):
         # 3. 타이머
         # QTimer.singleShot(50, lambda: self.scroll_to_row(row))
         # 4. 최초 버전 + 축으로 선택된 컬럼이 보이도록 이동
-        self.table_widget.scrollToItem(self.table_widget.item(row, min(self.x_column_index, self.y_column_index)), QAbstractItemView.PositionAtCenter)
+        self.table_widget.scrollToItem(self.table_widget.item(row, min(self.x_column_index, self.y_column_index)),
+                                       QAbstractItemView.PositionAtCenter)
 
         self.previous_selected_row = row
 
         self.table_widget.itemChanged.connect(self.on_item_changed)  # 신호 다시 연결
 
-    def scroll_to_row(self, row):
-        # 각 행의 높이를 고려하여 스크롤 값을 설정
-        # row_height = self.table_widget.rowHeight(row)
-        # scroll_value = row * row_height
-        # self.table_widget.verticalScrollBar().setValue(scroll_value)
-        self.table_widget.verticalScrollBar().setValue(row)
+    # def scroll_to_row(self, row):
+    #     # 각 행의 높이를 고려하여 스크롤 값을 설정
+    #     # row_height = self.table_widget.rowHeight(row)
+    #     # scroll_value = row * row_height
+    #     # self.table_widget.verticalScrollBar().setValue(scroll_value)
+    #     self.table_widget.verticalScrollBar().setValue(row)
 
     def reset_table_style(self):
         # 기본 폰트 및 색상 설정
@@ -461,8 +443,6 @@ class MainWindow(QMainWindow):
                     item.setForeground(default_foreground)
                     item.setFont(default_font)
 
-
-
     def on_item_changed(self, item):
         # X, Y축이 선택되어 있다면 차트를 업데이트
         if self.x_column and self.y_column:
@@ -472,14 +452,10 @@ class MainWindow(QMainWindow):
         selected_items = self.table_widget.selectedItems()
         if selected_items:
             row = selected_items[0].row()
-            print(f"on_selection_changed, row : {row}")
-            # QMessageBox.critical(self, 'Error', 'table item selected!')
             self.row_selected.emit(row)
 
     def generate_colors(self):
-        print("generate_colors")
         if self.data_handler is not None:
-            print("generate random color!")
             self.colors = [self.random_color() for _ in range(self.data_handler.get_data().shape[0])]
 
     def random_color(self):

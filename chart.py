@@ -1,14 +1,15 @@
 import math
-import random
+
+import numpy as np
+import pandas as pd
+from PyQt5.QtCore import pyqtSignal, pyqtSlot
 from matplotlib import lines
 from matplotlib.backend_bases import MouseButton
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
-from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt
-from PyQt5.QtWidgets import QTableWidgetItem, QMessageBox
-from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
-import numpy as np
-import pandas as pd
+
+from common import debug_print
+
 
 class ChartCanvas(FigureCanvas):
     point_selected = pyqtSignal(dict)
@@ -25,7 +26,6 @@ class ChartCanvas(FigureCanvas):
         self.data = None
         self.y_label = None
         self.x_label = None
-        # self.is_reversed = False
         self.is_x_reversed = False
         self.is_y_reversed = False
         self.annotates = []
@@ -39,10 +39,6 @@ class ChartCanvas(FigureCanvas):
         self.y_mid = None  # 초기화
         self.prev_mouse_x = None
         self.prev_mouse_y = None
-
-        # 테스트용 기본 툴바
-        self.toolbar = NavigationToolbar(self, parent)
-        parent.addToolBar(self.toolbar)
 
         self.cid = self.mpl_connect('button_press_event', self.on_click)
         self.cidmotion = self.mpl_connect('motion_notify_event', self.on_motion)
@@ -58,23 +54,20 @@ class ChartCanvas(FigureCanvas):
 
     @pyqtSlot(pd.DataFrame, str, str, list)
     def plot(self, data, x_label, y_label, colors):
-        print("plot")
         self.data = data
         self.x_label = x_label
         self.y_label = y_label
 
         if 'Color' not in self.data.columns:
-            # self.data['Color'] = [self.random_color() for _ in range(len(self.data))]
             self.data['Color'] = colors
 
         self.update_plot(True)
 
     def update_plot(self, force_redraw):
-        print("update_plot")
         self.axes.clear()
         self.annotates = []
 
-        print(f"before -> x_mid: {self.x_mid}, y_mid: {self.y_mid}")
+        debug_print(f"before -> x_mid: {self.x_mid}, y_mid: {self.y_mid}")
 
         if force_redraw is True:
             self.get_chart_max_size()
@@ -85,9 +78,8 @@ class ChartCanvas(FigureCanvas):
 
             # 사분면 크기 설정
             x_max, y_max = self.chart_size_x, self.chart_size_y
-            # x_mid, y_mid = x_max / 2, y_max / 2
+
             if self.x_mid is None or self.y_mid is None:
-                print("line /2")
                 self.x_mid = x_max / 2
                 self.y_mid = y_max / 2
 
@@ -98,23 +90,13 @@ class ChartCanvas(FigureCanvas):
                 t = y_max * 0.99
                 self.y_mid = math.floor(t * 10) / 10
 
-            print(f"after -> x_mid: {self.x_mid}, y_mid: {self.y_mid}")
-
-            # 사분면 선 그리기
-            # self.axes.axhline(y=y_mid, color='black', linestyle='--')
-            # self.axes.axvline(x=x_mid, color='black', linestyle='--')
+            debug_print(f"after -> x_mid: {self.x_mid}, y_mid: {self.y_mid}")
 
             self.hline = lines.Line2D([0, x_max], [self.y_mid, self.y_mid], color='black', linestyle='--')
             self.vline = lines.Line2D([self.x_mid, self.x_mid], [0, y_max], color='black', linestyle='--')
 
             self.axes.add_line(self.hline)
             self.axes.add_line(self.vline)
-
-            # # 사분면 배경 그리기
-            # self.axes.fill_between([0, x_mid], y_mid, y_max, color='red', alpha=0.1)
-            # self.axes.fill_between([x_mid, x_max], y_mid, y_max, color='blue', alpha=0.1)
-            # self.axes.fill_between([0, x_mid], 0, y_mid, color='green', alpha=0.1)
-            # self.axes.fill_between([x_mid, x_max], 0, y_mid, color='yellow', alpha=0.1)
 
             colors = self.data['Color'].tolist()
             self.scatter = self.axes.scatter(x_data, y_data, c=colors, picker=True)
@@ -157,7 +139,7 @@ class ChartCanvas(FigureCanvas):
         if event.inaxes != self.axes:
             return
 
-        print("on_click!")
+        debug_print("on_click >>>>>")
 
         if event.button == MouseButton.LEFT:
             contains, _ = self.hline.contains(event)
@@ -196,9 +178,9 @@ class ChartCanvas(FigureCanvas):
         if event.inaxes != self.axes:
             return
 
+        debug_print("on_motion >>>>>")
+
         if self.selected_point is not None:
-            print("on_motion")
-            # Update the data frame with new coordinates
             if event.xdata is not None and event.ydata is not None:
                 key = self.selected_point['Key']
 
@@ -230,9 +212,9 @@ class ChartCanvas(FigureCanvas):
 
     def on_release(self, event):
         if self.selected_point is not None:
-            print("on_release")
+            debug_print("on_release >>>>>")
 
-            # 마우스 커서가 전혀 움직이지 않았다면
+            # 마우스 커서가 전혀 움직이지 않았다면 드래그앤드랍 이벤트 무시
             if self.prev_mouse_x == event.xdata and self.prev_mouse_y == event.ydata:
                 self.selected_point = None
                 return
@@ -260,16 +242,13 @@ class ChartCanvas(FigureCanvas):
             self.selected_point = None
 
         if event.button == MouseButton.LEFT:
-            # self.x_mid = event.xdata
-            # self.y_mid = event.ydata
-
             if self.dragging_line == self.vline:
                 self.x_mid = event.xdata
-                print(f"Vertical line dropped at x = {self.x_mid}")
+                debug_print(f"Vertical line dropped at x = {self.x_mid}")
 
             elif self.dragging_line == self.hline:
                 self.y_mid = event.ydata
-                print(f"Horizontal line dropped at y = {self.y_mid}")
+                debug_print(f"Horizontal line dropped at y = {self.y_mid}")
 
             self.dragging_line = None
             self.press = None
@@ -289,26 +268,12 @@ class ChartCanvas(FigureCanvas):
 
     @pyqtSlot(int)
     def highlight_point(self, row):
-        print("highlight_point!")
         key = self.data.iloc[row]['Key']
-        print(f"highlight_point > key: {key}")
+        debug_print(f"highlight_point > key: {key}")
         for i, annotate in enumerate(self.annotates):
             if annotate.get_text() == key:
-                # print(f"highlight_point > for loop: {key}th annotate found!")
-                # # QMessageBox.critical(self, 'Error', 'highlight_point <- signal accepted!')
-                # self.selected_point = {
-                #     "Key": key,
-                #     "x": self.data.iloc[i][self.x_label],
-                #     "y": self.data.iloc[i][self.y_label],
-                #     "Summary": self.data.iloc[i]["Summary"]
-                # }
-                # self.point_selected.emit(self.selected_point)
-                # self.point_clicked.emit(key)
-
                 annotate.set_fontsize(19)  # 글꼴 크기 증가
-
             else:
                 annotate.set_fontsize(10)  # 기본 글꼴 크기
 
-        # self.update_plot(False)  # 주석 강조 업데이트
         self.draw()

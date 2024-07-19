@@ -5,8 +5,8 @@ from gui import MainWindow
 
 logging.basicConfig(filename='app.log', level=logging.ERROR)
 
-def main():
 
+def main():
     try:
         app = QApplication(sys.argv)
         main_window = MainWindow()
