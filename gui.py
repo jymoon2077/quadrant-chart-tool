@@ -84,7 +84,7 @@ class MainWindow(QMainWindow):
         self.chartview_layout.addWidget(self.selected_point_label, 4)
         h_widget = QWidget()
         h_widget.setLayout(self.chartview_layout)
-        h_widget.setFixedHeight(100)
+        h_widget.setFixedHeight(110)
 
         # 차트 정보 레이아웃을 오른쪽 레이아웃의 상단에 추가
         self.right_layout.addWidget(h_widget)
