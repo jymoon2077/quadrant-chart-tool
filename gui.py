@@ -301,6 +301,8 @@ class MainWindow(QMainWindow):
 
     @pyqtSlot(dict)
     def display_selected_point(self, point):
+        self.selected_point_label.setWordWrap(True)
+
         info = (
             f"<b>Selected Point:</b><br>"
             f"<b>Key:</b> {point['Key']}<br>"
