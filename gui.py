@@ -3,14 +3,14 @@ import re
 
 import pandas as pd
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt
-from PyQt5.QtGui import QFont, QColor
+from PyQt5.QtGui import QFont, QColor, QDoubleValidator
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLabel, QHBoxLayout, QPushButton, \
     QTableWidget, QTableWidgetItem, QFileDialog, QComboBox, QSplitter, QMessageBox, QAbstractItemView
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 
 from chart import ChartCanvas
 from data_handler import DataHandler
-from common import debug_print
+from common import debug_print, TEXT_COLUMN_LIST
 
 
 class MainWindow(QMainWindow):
@@ -27,6 +27,7 @@ class MainWindow(QMainWindow):
         self.x_column_index = -1
         self.y_column_index = -1
         self.chart_data = None
+        self.is_chart_ready = False
 
         self.data_handler = DataHandler()
         self.column_info = self.data_handler.get_column_info()
@@ -161,6 +162,7 @@ class MainWindow(QMainWindow):
             debug_print(chart_data)
             debug_print("================== plot chart > chart data =======================")
             self.chart_canvas.plot(chart_data, self.x_column, self.y_column, self.colors)
+            self.is_chart_ready = True
 
     def save_changes(self):
         file_path, _ = QFileDialog.getSaveFileName(self, 'Save File', '', 'Excel Files (*.xlsx)')
@@ -171,9 +173,7 @@ class MainWindow(QMainWindow):
         data = self.data_handler.get_data()
         columns = data.columns
 
-        exclude_texts = ['Key', 'Summary']  # 2개의 컬럼은 고정이라고 가정
-
-        filtered_columns = [col for col in columns if not any(text in col for text in exclude_texts)]
+        filtered_columns = [col for col in columns if not any(text in col for text in TEXT_COLUMN_LIST)]
 
         self.x_combo_box.clear()
         self.y_combo_box.clear()
@@ -444,11 +444,33 @@ class MainWindow(QMainWindow):
                     item.setFont(default_font)
 
     def on_item_changed(self, item):
+        # 차트가 그려지기 전이면 동작 안함
+        if not self.is_chart_ready:
+            return
+
+        # 현재 수정된 셀의 컬럼 이름을 가져오기
+        col_name = self.column_info[item.column()]['name']
+
+        # 숫자만 입력받는 컬럼인지 확인
+        if col_name not in TEXT_COLUMN_LIST:
+            # 셀의 값을 가져오고 숫자인지 확인
+            try:
+                float(item.text())
+            except ValueError:
+                QMessageBox.warning(self, "Invalid Input", "Please enter a valid number.")
+                item.setText("0")  # 입력값 0 처리
+                return
+
         # X, Y축이 선택되어 있다면 차트를 업데이트
         if self.x_column and self.y_column:
             self.plot_chart()
 
     def on_selection_changed(self):
+        # 차트가 그려지기 전이면 동작 안함
+        if not self.is_chart_ready:
+            print("Chart is not ready. Ignoring selection change.")
+            return
+
         selected_items = self.table_widget.selectedItems()
         if selected_items:
             row = selected_items[0].row()
