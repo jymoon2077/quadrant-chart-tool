@@ -2,7 +2,7 @@ import random
 import re
 
 import pandas as pd
-from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt
+from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt, QEvent
 from PyQt5.QtGui import QFont, QColor, QDoubleValidator
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLabel, QHBoxLayout, QPushButton, \
     QTableWidget, QTableWidgetItem, QFileDialog, QComboBox, QSplitter, QMessageBox, QAbstractItemView
@@ -135,6 +135,9 @@ class MainWindow(QMainWindow):
         self.row_deselected.connect(self.chart_canvas.obscure_point)
 
         self.row_selected.connect(self.chart_canvas.highlight_point)
+
+        self.installEventFilter(self)
+        self.table_widget.viewport().installEventFilter(self)
 
 
 
@@ -484,6 +487,19 @@ class MainWindow(QMainWindow):
             self.row_selected.emit(row)
         elif deselected_indexes:
             self.row_deselected.emit()
+
+    def eventFilter(self, source, event):
+        if event.type() == QEvent.MouseButtonPress:
+            if source == self and not self.table_widget.underMouse():
+                # 테이블 바깥을 클릭한 경우
+                self.table_widget.clearSelection()
+                self.row_deselected.emit()
+            elif source == self.table_widget.viewport():
+                # 테이블 셀을 클릭한 경우
+                selected_items = self.table_widget.selectedItems()
+                if not selected_items:
+                    self.row_deselected.emit()
+        return super(MainWindow, self).eventFilter(source, event)
 
     def generate_colors(self):
         if self.data_handler is not None:
