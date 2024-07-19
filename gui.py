@@ -80,7 +80,7 @@ class MainWindow(QMainWindow):
         # 차트 정보 레이아웃
         self.chartview_layout = QHBoxLayout()
         self.selected_point_label = QLabel('Selected Point: None')
-        self.chartview_layout.addWidget(self.selected_point_label, 3)
+        self.chartview_layout.addWidget(self.selected_point_label, 4)
         h_widget = QWidget()
         h_widget.setLayout(self.chartview_layout)
         h_widget.setFixedHeight(100)
@@ -294,7 +294,7 @@ class MainWindow(QMainWindow):
             f"<b>Selected Point:</b><br>"
             f"<b>Key:</b> {point['Key']}<br>"
             f"<b>Summary:</b> {point['Summary']}<br>"
-            f"<b>X ({self.x_column}):</b> {point['x']}<br>"
+            f"<b>X ({self.x_column}):</b> {point['x']} , "
             f"<b>Y ({self.y_column}):</b> {point['y']}<br>"
         )
         self.selected_point_label.setText(info)
