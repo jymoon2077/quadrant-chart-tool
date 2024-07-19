@@ -422,13 +422,6 @@ class MainWindow(QMainWindow):
 
         self.table_widget.itemChanged.connect(self.on_item_changed)  # 신호 다시 연결
 
-    # def scroll_to_row(self, row):
-    #     # 각 행의 높이를 고려하여 스크롤 값을 설정
-    #     # row_height = self.table_widget.rowHeight(row)
-    #     # scroll_value = row * row_height
-    #     # self.table_widget.verticalScrollBar().setValue(scroll_value)
-    #     self.table_widget.verticalScrollBar().setValue(row)
-
     def reset_table_style(self):
         # 기본 폰트 및 색상 설정
         default_font = QFont()
@@ -468,7 +461,6 @@ class MainWindow(QMainWindow):
     def on_selection_changed(self):
         # 차트가 그려지기 전이면 동작 안함
         if not self.is_chart_ready:
-            print("Chart is not ready. Ignoring selection change.")
             return
 
         selected_items = self.table_widget.selectedItems()
