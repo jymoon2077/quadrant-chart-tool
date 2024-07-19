@@ -277,3 +277,10 @@ class ChartCanvas(FigureCanvas):
                 annotate.set_fontsize(10)  # 기본 글꼴 크기
 
         self.draw()
+
+    @pyqtSlot()
+    def obscure_point(self):
+        for i, annotate in enumerate(self.annotates):
+            annotate.set_fontsize(10)  # 기본 글꼴 크기
+
+        self.draw()

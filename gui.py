@@ -15,6 +15,7 @@ from common import debug_print, TEXT_COLUMN_LIST
 
 class MainWindow(QMainWindow):
     row_selected = pyqtSignal(int)
+    row_deselected = pyqtSignal()
 
     def __init__(self):
         super().__init__()
@@ -127,8 +128,15 @@ class MainWindow(QMainWindow):
         self.table_widget.itemChanged.connect(self.on_item_changed)
 
         # 테이블에서 특정 row 선택 시 차트에서 해당 annotation 크기를 늘려서 표시
-        self.table_widget.itemSelectionChanged.connect(self.on_selection_changed)
+        # 기존
+        # self.table_widget.itemSelectionChanged.connect(self.on_selection_changed)
+        # 디셀렉트 테스트
+        self.table_widget.selectionModel().selectionChanged.connect(self.on_selection_changed)
+        self.row_deselected.connect(self.chart_canvas.obscure_point)
+
         self.row_selected.connect(self.chart_canvas.highlight_point)
+
+
 
     def load_data(self):
 
@@ -458,15 +466,24 @@ class MainWindow(QMainWindow):
         if self.x_column and self.y_column:
             self.plot_chart()
 
-    def on_selection_changed(self):
+    def on_selection_changed(self, selected, deselected):
         # 차트가 그려지기 전이면 동작 안함
         if not self.is_chart_ready:
             return
 
-        selected_items = self.table_widget.selectedItems()
-        if selected_items:
-            row = selected_items[0].row()
+        # selected_items = self.table_widget.selectedItems()
+        # if selected_items:
+        #     row = selected_items[0].row()
+        #     self.row_selected.emit(row)
+
+        selected_indexes = selected.indexes()
+        deselected_indexes = deselected.indexes()
+
+        if selected_indexes:
+            row = selected_indexes[0].row()
             self.row_selected.emit(row)
+        elif deselected_indexes:
+            self.row_deselected.emit()
 
     def generate_colors(self):
         if self.data_handler is not None:
