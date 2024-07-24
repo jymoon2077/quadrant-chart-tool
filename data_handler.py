@@ -24,7 +24,7 @@ class DataHandler:
         self.create_column_info() # 컬럼 정보를 저장
 
     def create_column_info(self):
-        # 첫번째 row 값을 조사하여 컬럼 정보를 저장한다
+        # 첫번째 row 값을 조사하여 컬럼 정보를 딕셔너리 형으로 저장한다
 
         # 알파벳 순서대로 맵핑
         for i, value in enumerate(self.data.columns):

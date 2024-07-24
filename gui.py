@@ -3,14 +3,14 @@ import re
 
 import pandas as pd
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt, QEvent
-from PyQt5.QtGui import QFont, QColor, QDoubleValidator
+from PyQt5.QtGui import QFont, QColor
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLabel, QHBoxLayout, QPushButton, \
     QTableWidget, QTableWidgetItem, QFileDialog, QComboBox, QSplitter, QMessageBox, QAbstractItemView
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 
 from chart import ChartCanvas
-from data_handler import DataHandler
 from common import debug_print, TEXT_COLUMN_LIST
+from data_handler import DataHandler
 
 
 class MainWindow(QMainWindow):
@@ -127,10 +127,7 @@ class MainWindow(QMainWindow):
         # 테이블에서 직접 값 변경 시 차트 갱신
         self.table_widget.itemChanged.connect(self.on_item_changed)
 
-        # 테이블에서 특정 row 선택 시 차트에서 해당 annotation 크기를 늘려서 표시
-        # 기존
-        # self.table_widget.itemSelectionChanged.connect(self.on_selection_changed)
-        # 디셀렉트 테스트
+        # 테이블에서 특정 row 선택 시 차트에서 해당 annotation 크기를 늘려서 표시, 선택 해제 시 크기 원복
         self.table_widget.selectionModel().selectionChanged.connect(self.on_selection_changed)
         self.row_deselected.connect(self.chart_canvas.obscure_point)
 
@@ -138,8 +135,6 @@ class MainWindow(QMainWindow):
 
         self.installEventFilter(self)
         self.table_widget.viewport().installEventFilter(self)
-
-
 
     def load_data(self):
 
@@ -233,23 +228,23 @@ class MainWindow(QMainWindow):
             if self.x_column_index != -1 and self.y_column_index != -1:
                 break
 
-        debug_print(f"check_axes_selection -> x_column_index: {self.x_column_index}, y_column_index: {self.y_column_index}")
+        debug_print(
+            f"check_axes_selection -> x_column_index: {self.x_column_index}, y_column_index: {self.y_column_index}")
         return True
 
     def display_data(self):
+        # 데이터를 테이블에 표시한다, 값은 그대로, 수식은 계산하여 값만
         data = self.data_handler.get_data()
         self.table_widget.setRowCount(data.shape[0])
         self.table_widget.setColumnCount(data.shape[1])
         self.table_widget.setHorizontalHeaderLabels(data.columns)
 
-        # 추가 계산이 필요한 컬럼을 먼저 조사
+        # 추가 계산이 필요한 수식 컬럼을 먼저 조사
         column_info = self.data_handler.get_column_info()
         true_formula_indices = [index for index, details in column_info.items() if details['is_formula']]
-
-        # 결과 출력
         debug_print(true_formula_indices)
 
-        # 이 부분에 수식을 계산해서 숫자로 변환하는 코드 추가
+        # 수식을 계산해서 숫자 값으로 변환
         for i in range(data.shape[0]):
             for j in range(data.shape[1]):
                 if j in true_formula_indices:
@@ -259,6 +254,7 @@ class MainWindow(QMainWindow):
                     self.table_widget.setItem(i, j, QTableWidgetItem(str(data.iat[i, j])))
 
     def calculate_formula(self, row, col):
+        # String 형태의 수식을 계산식으로 치환하여 값 계산
         data = self.data_handler.get_data()
         formula = self.column_info[col]['formula']
         formula = formula.lstrip('=')
@@ -267,7 +263,6 @@ class MainWindow(QMainWindow):
         # 변수에 대응하는 값을 저장할 딕셔너리
         variables = {}
 
-        # 각 변수에 대응하는 숫자를 사용자로부터 입력받기
         for char in formula:
             if char.isalpha():  # 알파벳인지 확인
                 if char not in variables:  # 이미 입력받은 변수는 건너뜀
@@ -289,9 +284,11 @@ class MainWindow(QMainWindow):
             result = eval(formula)
             rounded_result = round(result, 1)
         except ZeroDivisionError:
+            # 수식 오류 처리 (1)
             debug_print("Error: Division by zero")
             rounded_result = 0
         except Exception as e:
+            # 수식 오류 처리 (2)
             debug_print(f"Error: {e}")
             rounded_result = 0
 
@@ -301,6 +298,7 @@ class MainWindow(QMainWindow):
 
     @pyqtSlot(dict)
     def display_selected_point(self, point):
+        # 현재 선택된 데이터 정보를 차트 상단에 표시
         self.selected_point_label.setWordWrap(True)
 
         info = (
@@ -313,7 +311,7 @@ class MainWindow(QMainWindow):
         self.selected_point_label.setText(info)
 
     def update_row_by_key(self, key_to_update, new_x_value, new_y_value):
-
+        # 차트 이동에 의해 변경된 컬럼 값을 셀 스타일을 변경하여 표시
         for row in range(self.table_widget.rowCount()):
             item = self.table_widget.item(row, 0)
             if item is not None and item.text() == key_to_update:
@@ -336,7 +334,6 @@ class MainWindow(QMainWindow):
                 break
 
     def update_data_from_gui(self):
-
         # GUI 테이블에서 변경된 값을 DataFrame에 저장
         # 수식이 없는 컬럼은 값을 그대로 저장하고
         # 수식이 있는 컬럼은 저장 없이 계산만 하여 보여준다
@@ -353,7 +350,7 @@ class MainWindow(QMainWindow):
         debug_print(data)
         debug_print("========================== update_data from gui =============================")
 
-        # 이 부분에 수식을 계산해서 숫자로 변환하는 코드 추가
+        # 수식을 계산해서 숫자 값으로 변환
         for i in range(data.shape[0]):
             for j in range(data.shape[1]):
                 if j in true_formula_indices:
@@ -366,8 +363,7 @@ class MainWindow(QMainWindow):
                     data.iat[i, j] = cell_value
 
     def get_table_data(self):
-
-        # 테이블의 값을 기준으로 차트를 그릴 DataFrame 생성
+        # 테이블의 값을 기준으로 차트를 그릴 DataFrame 생성 (엑셀에서 읽어온 DataFrame과는 별도)
         rows = self.table_widget.rowCount()
         cols = self.table_widget.columnCount()
         data = []
@@ -436,7 +432,7 @@ class MainWindow(QMainWindow):
         self.table_widget.itemChanged.connect(self.on_item_changed)  # 신호 다시 연결
 
     def reset_table_style(self):
-        # 기본 폰트 및 색상 설정
+        # 테이블에 적용된 스타일을 모두 제거하고 기본 폰트 및 색상 설정
         default_font = QFont()
         default_background = QColor(Qt.white)
         default_foreground = QColor(Qt.black)
@@ -450,6 +446,8 @@ class MainWindow(QMainWindow):
                     item.setFont(default_font)
 
     def on_item_changed(self, item):
+        # 테이블 셀 값이 변경되었을 경우 차트를 업데이트 한다
+
         # 차트가 그려지기 전이면 동작 안함
         if not self.is_chart_ready:
             return
@@ -472,14 +470,11 @@ class MainWindow(QMainWindow):
             self.plot_chart()
 
     def on_selection_changed(self, selected, deselected):
+        # 테이블 셀 선택/선택 해제 이벤트 발생 시 차트를 업데이트 한다
+
         # 차트가 그려지기 전이면 동작 안함
         if not self.is_chart_ready:
             return
-
-        # selected_items = self.table_widget.selectedItems()
-        # if selected_items:
-        #     row = selected_items[0].row()
-        #     self.row_selected.emit(row)
 
         selected_indexes = selected.indexes()
         deselected_indexes = deselected.indexes()
@@ -491,6 +486,7 @@ class MainWindow(QMainWindow):
             self.row_deselected.emit()
 
     def eventFilter(self, source, event):
+        # 마우스 이벤트 감지, 테이블 바깥 영역에서 클릭 발생 시 테이블 셀 선택 해제
         if event.type() == QEvent.MouseButtonPress:
             if source == self and not self.table_widget.underMouse():
                 # 테이블 바깥을 클릭한 경우

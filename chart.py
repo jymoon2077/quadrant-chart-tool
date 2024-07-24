@@ -8,7 +8,7 @@ from matplotlib.backend_bases import MouseButton
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 
-from common import debug_print
+from common import debug_print, ANNOTAION_DEFAULT_SIZE, ANNOTAION_BIG_SIZE
 
 
 class ChartCanvas(FigureCanvas):
@@ -79,10 +79,12 @@ class ChartCanvas(FigureCanvas):
             # 사분면 크기 설정
             x_max, y_max = self.chart_size_x, self.chart_size_y
 
+            # 중앙선 위치 - 일반적인 경우
             if self.x_mid is None or self.y_mid is None:
                 self.x_mid = x_max / 2
                 self.y_mid = y_max / 2
 
+            # 중앙선 위치 - 차트 바깥에 위치할 경우 가까운 안쪽으로 옮김
             if self.x_mid >= x_max:
                 t = x_max * 0.99
                 self.x_mid = math.floor(t * 10) / 10
@@ -98,10 +100,10 @@ class ChartCanvas(FigureCanvas):
             self.axes.add_line(self.hline)
             self.axes.add_line(self.vline)
 
+            # 차트 데이터 생성
             colors = self.data['Color'].tolist()
             self.scatter = self.axes.scatter(x_data, y_data, c=colors, picker=True)
 
-            # 차트 데이터 생성
             for i, key in enumerate(self.data['Key']):
                 color = self.data['Color'].iloc[i]
                 annotate = self.axes.annotate(key, (x_data.iloc[i], y_data.iloc[i]),
@@ -136,6 +138,7 @@ class ChartCanvas(FigureCanvas):
             self.chart_size_y = y_data.max()
 
     def on_click(self, event):
+        # 마우스 클릭 이벤트 처리
         if event.inaxes != self.axes:
             return
 
@@ -175,6 +178,7 @@ class ChartCanvas(FigureCanvas):
         self.figure.canvas.blit(self.axes.bbox)
 
     def on_motion(self, event):
+        # 마우스 이동 (드래그) 이벤트 처리
         if event.inaxes != self.axes:
             return
 
@@ -211,6 +215,7 @@ class ChartCanvas(FigureCanvas):
         self.figure.canvas.draw()
 
     def on_release(self, event):
+        # 마우스 해제 (드랍) 이벤트 처리
         if self.selected_point is not None:
             debug_print("on_release >>>>>")
 
@@ -253,11 +258,6 @@ class ChartCanvas(FigureCanvas):
             self.dragging_line = None
             self.press = None
 
-    @pyqtSlot()
-    def reverse_chart(self):
-        self.is_reversed = not self.is_reversed
-        self.update_plot(False)
-
     def reverse_x_axis(self):
         self.is_x_reversed = not self.is_x_reversed
         self.update_plot(False)
@@ -268,19 +268,21 @@ class ChartCanvas(FigureCanvas):
 
     @pyqtSlot(int)
     def highlight_point(self, row):
+        # 테이블에서 선택된 데이터를 차트에서 강조하여 표시
         key = self.data.iloc[row]['Key']
         debug_print(f"highlight_point > key: {key}")
         for i, annotate in enumerate(self.annotates):
             if annotate.get_text() == key:
-                annotate.set_fontsize(19)  # 글꼴 크기 증가
+                annotate.set_fontsize(ANNOTAION_BIG_SIZE)  # 글꼴 크기 증가
             else:
-                annotate.set_fontsize(10)  # 기본 글꼴 크기
+                annotate.set_fontsize(ANNOTAION_DEFAULT_SIZE)  # 기본 글꼴 크기
 
         self.draw()
 
     @pyqtSlot()
     def obscure_point(self):
+        # 차트에서 강조된 데이터 표시 초기화
         for i, annotate in enumerate(self.annotates):
-            annotate.set_fontsize(10)  # 기본 글꼴 크기
+            annotate.set_fontsize(ANNOTAION_DEFAULT_SIZE)  # 기본 글꼴 크기
 
         self.draw()
